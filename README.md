@@ -28,7 +28,11 @@
 
 ## Install
 
-ReqTune isn't on the Chrome Web Store yet, so load it from source. You need Chrome 116+ and Node.js 22.12+.
+ReqTune isn't on the Chrome Web Store yet. You need Chrome 116+.
+
+**From a release:** download the zip from the [latest release](https://github.com/svichas/ReqTune/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the unzipped folder.
+
+**From source** (needs Node.js 22.12+):
 
 ```bash
 git clone https://github.com/svichas/ReqTune.git
@@ -37,7 +41,7 @@ npm install
 npm run build
 ```
 
-Then open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the `dist/` folder.
+Then load the `dist/` folder the same way.
 
 ## Usage
 
