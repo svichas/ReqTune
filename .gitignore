@@ -1,0 +1,5 @@
+node_modules
+dist
+# Chrome "Pack extension" output; the .pem is the private signing key
+*.crx
+*.pem

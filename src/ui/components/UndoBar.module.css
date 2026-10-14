@@ -1,0 +1,39 @@
+.region {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 26rem;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--rt-raised);
+  box-shadow: var(--mantine-shadow-md);
+  pointer-events: auto;
+  animation: rise var(--rt-duration-slow, 260ms) var(--rt-ease, ease-out);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}

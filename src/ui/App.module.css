@@ -1,0 +1,43 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding-inline: 12px 10px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.brand {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  margin: 0;
+}
+
+.logo {
+  display: block;
+  height: 20px;
+  width: auto;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* A classic scrollbar appearing when a group expands would otherwise narrow, and reflow, the whole list. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  /* Room for the undo bar, so it never covers the last group's "Add header" row. */
+  padding-bottom: 64px;
+}
+
+.alertMessage {
+  overflow-wrap: anywhere;
+}

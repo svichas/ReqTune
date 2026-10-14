@@ -1,0 +1,25 @@
+.syntax {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.syntax dd {
+  margin: 0;
+  color: var(--mantine-color-dimmed);
+  align-self: center;
+}
+
+.fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fact svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--mantine-color-dimmed);
+}
