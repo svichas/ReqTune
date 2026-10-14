@@ -21,7 +21,8 @@
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
-- **Comfortable editing** — duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
+- **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
+- **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
 - **Side panel** — stays open while you browse; light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
