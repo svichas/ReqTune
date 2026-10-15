@@ -2,9 +2,11 @@
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  /* Side space that centres a readable column once the page is wider than a panel, as the full page is. Bars and the
-     list still span the window, so their hairlines and the scrollbar stay at its edges. */
-  --rt-side: max(0px, (100% - 60rem) / 2);
+  /* Keep each group inset, then centre a readable column in the full page. */
+  --rt-side: max(12px, (100% - 60rem) / 2);
+  --rt-group-gap: 12px;
+  --rt-group-inset: 12px;
+  --rt-group-header-height: 44px;
 }
 
 /* Lifts the undo bar clear of the footer. */
@@ -18,7 +20,7 @@
   align-items: center;
   gap: 4px;
   height: 48px;
-  padding-inline: calc(var(--rt-side) + 12px) calc(var(--rt-side) + 10px);
+  padding-inline: var(--rt-side);
   border-bottom: 1px solid var(--mantine-color-default-border);
 }
 
@@ -42,9 +44,20 @@
   /* A classic scrollbar appearing when a group expands would otherwise narrow, and reflow, the whole list. */
   scrollbar-gutter: stable;
   scrollbar-width: thin;
+  background: var(--rt-canvas);
   padding-inline: var(--rt-side);
+  padding-top: var(--rt-group-gap);
   /* Room for the undo bar, so it never covers the last group's "Add header" row. */
   padding-bottom: 64px;
+}
+
+@media (min-width: 40rem) {
+  .app {
+    --rt-side: max(24px, (100% - 60rem) / 2);
+    --rt-group-gap: 24px;
+    --rt-group-inset: 20px;
+    --rt-group-header-height: 52px;
+  }
 }
 
 .footer {
