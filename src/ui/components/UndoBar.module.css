@@ -1,7 +1,7 @@
 .region {
   position: fixed;
   inset-inline: 12px;
-  bottom: 12px;
+  bottom: calc(12px + var(--rt-bottom-inset, 0px));
   display: flex;
   justify-content: center;
   pointer-events: none;

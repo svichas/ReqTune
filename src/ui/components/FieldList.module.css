@@ -133,6 +133,17 @@ input.input[data-masked] {
   border-left: 1px solid var(--rt-line);
 }
 
+/* With room to spare, as in the full page, values (often long tokens) get the larger share. */
+@media (min-width: 40rem) {
+  .name {
+    flex-grow: 2;
+  }
+
+  .value {
+    flex-grow: 3;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .remove,
   .add {

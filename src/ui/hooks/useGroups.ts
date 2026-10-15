@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
-import { getGroups, getTabSelections, saveGroups, saveTabSelections } from '../../shared/storage';
+import { getGroups, getTabSelections, saveGroups, saveTabSelections, watchOtherSaves } from '../../shared/storage';
 import type { Group, TabSelections } from '../../shared/types';
 
-// shortcut: two open panels don't live-sync; subscribe via watchKey with a write-echo guard if that's ever needed
+/** The stored groups and tab selections, kept in step with any other open panel or full page. */
 export function useGroups() {
   const [groups, setGroupsState] = useState<Group[]>([]);
   const [tabSelections, setTabSelectionsState] = useState<TabSelections>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const unwatch = [
+      watchOtherSaves('groups', (stored) => setGroupsState(stored ?? [])),
+      watchOtherSaves('tabSelections', (stored) => setTabSelectionsState(stored ?? {})),
+    ];
     void Promise.all([getGroups(), getTabSelections()]).then(([storedGroups, storedSelections]) => {
       setGroupsState(storedGroups);
       setTabSelectionsState(storedSelections);
       setLoading(false);
     });
+    return () => unwatch.forEach((stop) => stop());
   }, []);
 
   const setGroups = (next: Group[]) => {
