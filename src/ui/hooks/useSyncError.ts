@@ -6,7 +6,7 @@ export function useSyncError(): string | undefined {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    const unwatch = watchKey('syncError', setError);
+    const unwatch = watchKey('local', 'syncError', setError);
     void getSyncError().then(setError);
     return unwatch;
   }, []);

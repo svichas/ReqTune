@@ -20,6 +20,7 @@
 - **Groups** — pair wildcard URL patterns with the headers to send, and flip each group on or off.
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
+- **Per-tab groups** — optionally apply a group only in the tabs you pick, say the one you're testing in. Tucked away under **Tabs** until you need it.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
@@ -48,10 +49,11 @@ Then load the `dist/` folder the same way.
 1. Click the ReqTune icon in the toolbar to open the side panel (pin it from the puzzle-piece menu for one-click access).
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
+4. To apply a group in some tabs only, open **Tabs** at the bottom of the group, choose **Selected tabs** and tick the tabs. In the side panel, the tab you're on is ticked for you. Tab choices last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
-A group shows **Inactive** until it has at least one valid pattern and one valid header.
+A group shows **Inactive** until it has at least one valid pattern and one valid header, and, if it's limited to selected tabs, one of them is open.
 
 ## Pattern syntax
 
@@ -82,7 +84,9 @@ flowchart LR
   DNR -- sets headers on --> R(("Matching requests"))
 ```
 
-The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each pattern compiles to an anchored regex, rules cover every resource type (including page navigations), and the whole rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each pattern compiles to an anchored regex, rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+
+Groups limited to selected tabs become session rules with a `tabIds` condition, the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the tab choices live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 
 ## Permissions
 
@@ -91,6 +95,7 @@ The background service worker turns every enabled group into one [`declarativeNe
 | `declarativeNetRequestWithHostAccess` | Apply the header rules |
 | `storage` | Save your groups |
 | `sidePanel` | Show the UI in Chrome's side panel |
+| `favicon` | Show site icons in the tab picker, from Chrome's icon cache. Adds no install warning, since ReqTune already has site access. |
 | Access to all sites | Set headers on whichever sites your patterns name. You can narrow this in the extension's Chrome settings. |
 
 Header values (tokens included) are stored unencrypted in the extension's local storage.
