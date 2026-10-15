@@ -8,11 +8,11 @@ interface Props {
   patterns: string[];
   /** Focus the first pattern input on mount (a brand-new group). */
   autoFocus: boolean;
-  required: boolean;
   onChange: (patterns: string[]) => void;
 }
 
-export function PatternList({ patterns, autoFocus, required, onChange }: Props) {
+/** The pattern rows alone: GroupTarget draws the label row, with its URL patterns / Tabs switch. */
+export function PatternList({ patterns, autoFocus, onChange }: Props) {
   const { ref, focusAfterRender } = useFocusAfterRender(autoFocus ? '0' : undefined);
   // Patterns over Chrome's regex compile-size limit (the worker skips them); only Chrome can tell, asynchronously.
   const [tooComplex, setTooComplex] = useState<string[]>([]);
@@ -50,8 +50,6 @@ export function PatternList({ patterns, autoFocus, required, onChange }: Props) 
 
   return (
     <FieldList
-      label="URL patterns"
-      required={required}
       addLabel="Add pattern"
       addRef={ref('add')}
       onAdd={() => insert(patterns.length)}

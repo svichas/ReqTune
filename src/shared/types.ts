@@ -12,9 +12,12 @@ export interface Group {
   /** Wildcard URL patterns, e.g. `*.example.com/api/*`; syntax in pattern.ts. */
   patterns: string[];
   headers: HeaderEntry[];
-  /** Apply only to requests from the tabs picked for this group in TabSelections; otherwise from anywhere. */
-  limitToTabs?: boolean;
+  /**
+   * Which requests get the headers: those matching `patterns`, from any tab (the default), or every request from the
+   * tabs picked for the group in TabSelections, whatever its URL. Never both.
+   */
+  target?: 'patterns' | 'tabs';
 }
 
-/** Group id -> ids of the tabs it is limited to. Only meaningful for groups with `limitToTabs`. */
+/** Group id -> ids of the tabs picked for it; only used while its `target` is 'tabs'. */
 export type TabSelections = Record<string, number[]>;

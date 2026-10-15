@@ -11,11 +11,11 @@ const group = (patterns: string[], headers: HeaderEntry[], enabled = true): Grou
   patterns,
   headers,
 });
-const rule = (id: number, priority: number, pattern: string, header: string, value: string, tabIds?: number[]) => ({
+const rule = (id: number, priority: number, pattern: string, header: string, value: string) => ({
   id,
   priority,
   action: { type: 'modifyHeaders', requestHeaders: [{ header, operation: 'set', value }] },
-  condition: { regexFilter: patternToRegex(pattern), resourceTypes, ...(tabIds && { tabIds }) },
+  condition: { regexFilter: patternToRegex(pattern), resourceTypes },
 });
 
 describe('buildRules', () => {
@@ -37,21 +37,33 @@ describe('buildRules', () => {
     ]);
   });
 
-  it('limits a group to its picked tabs only when it is set to', () => {
+  it('targets either URL patterns or every request from the picked tabs, never both', () => {
     const header = { name: 'X-Token', value: 't' };
-    const groups = [
-      { ...group(['limited.com', 'limited.org'], [header]), id: 'limited', limitToTabs: true },
-      { ...group(['nothing-picked.com'], [header]), id: 'nothing-picked', limitToTabs: true },
-      { ...group(['never-picked.com'], [header]), id: 'never-picked', limitToTabs: true },
-      { ...group(['all-tabs.com'], [header]), id: 'all-tabs', limitToTabs: false },
+    const groups: Group[] = [
+      { ...group(['ignored.com'], [header]), id: 'tabs', target: 'tabs' },
+      { ...group(['nothing.com'], [header]), id: 'nothing-picked', target: 'tabs' },
+      { ...group(['never.com'], [header]), id: 'never-picked', target: 'tabs' },
+      { ...group(['patterns.com'], [header]), id: 'patterns', target: 'patterns' },
     ];
-    const rules = buildRules(groups, { limited: [3, 7], 'nothing-picked': [], 'all-tabs': [3] }, resourceTypes);
+    const rules = buildRules(groups, { tabs: [3, 7], 'nothing-picked': [], patterns: [3] }, resourceTypes);
     expect(rules).toEqual([
-      rule(1, 4, 'limited.com', 'X-Token', 't', [3, 7]),
-      rule(2, 4, 'limited.org', 'X-Token', 't', [3, 7]),
-      rule(3, 1, 'all-tabs.com', 'X-Token', 't'),
+      {
+        id: 1,
+        priority: 4,
+        action: { type: 'modifyHeaders', requestHeaders: [{ header: 'X-Token', operation: 'set', value: 't' }] },
+        condition: { tabIds: [3, 7], resourceTypes },
+      },
+      rule(2, 1, 'patterns.com', 'X-Token', 't'),
     ]);
-    // Absent, not undefined: Chrome only accepts tabIds in session rules.
-    expect(rules[2].condition).not.toHaveProperty('tabIds');
+    // A tabs group matches every URL; a patterns group every tab. Chrome only accepts tabIds in session rules.
+    expect(rules[0].condition).not.toHaveProperty('regexFilter');
+    expect(rules[1].condition).not.toHaveProperty('tabIds');
+  });
+
+  it("keeps groups saved by 0.1.3's \"Selected tabs\" on their URL patterns", () => {
+    // 0.1.3 limited a group to patterns *and* tabs with `limitToTabs`. Read as targeting tabs, its headers (often a
+    // token) would start going to every site those tabs talk to; on patterns they stay with the sites named.
+    const legacy = { ...group(['api.example.com'], [{ name: 'X-Token', value: 't' }]), limitToTabs: true } as Group;
+    expect(buildRules([legacy], { '': [3] }, resourceTypes)).toEqual([rule(1, 1, 'api.example.com', 'X-Token', 't')]);
   });
 });
