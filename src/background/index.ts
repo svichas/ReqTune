@@ -13,7 +13,9 @@ async function applyRules(): Promise<void> {
     const rules = buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
     // One regex over Chrome's compile-size limit would fail the whole update, so those rules are left out.
     const checks = await Promise.all(
-      rules.map(({ condition }) => dnr.isRegexSupported({ regex: condition.regexFilter!, isCaseSensitive: false })),
+      rules.map(({ condition: { regexFilter } }) =>
+        regexFilter ? dnr.isRegexSupported({ regex: regexFilter, isCaseSensitive: false }) : { isSupported: true },
+      ),
     );
     const addRules = rules.filter((_, i) => checks[i].isSupported);
     // Chrome only matches tabIds in session rules, which, like tab ids, don't outlive the browser session.

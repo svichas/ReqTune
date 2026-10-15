@@ -1,0 +1,44 @@
+/* Two quiet text tabs in place of the list label: the chosen one in full text colour, underlined in the brand colour. */
+.list {
+  display: flex;
+  gap: 14px;
+}
+
+/* `unstyled` Tabs leave the browser's button look, so reset it here. */
+.tab {
+  padding: 6px 0 4px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  line-height: var(--mantine-line-height-xs);
+  color: var(--mantine-color-dimmed);
+  cursor: pointer;
+  transition:
+    color var(--rt-duration-fast, 120ms) ease,
+    border-color var(--rt-duration-fast, 120ms) ease;
+}
+
+.tab:hover {
+  color: var(--mantine-color-text);
+}
+
+.tab[data-active] {
+  color: var(--mantine-color-text);
+  border-bottom-color: var(--mantine-primary-color-filled);
+}
+
+/* `unstyled` drops Mantine's focus ring with the rest, so draw the same one. */
+.tab:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: var(--mantine-radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

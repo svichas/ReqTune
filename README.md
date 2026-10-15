@@ -20,7 +20,7 @@
 - **Groups** — pair wildcard URL patterns with the headers to send, and flip each group on or off.
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
-- **Per-tab groups** — optionally apply a group only in the tabs you pick, say the one you're testing in. Tucked away under **Tabs** until you need it.
+- **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
@@ -49,11 +49,11 @@ Then load the `dist/` folder the same way.
 1. Click the ReqTune icon in the toolbar to open the side panel (pin it from the puzzle-piece menu for one-click access).
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
-4. To apply a group in some tabs only, open **Tabs** at the bottom of the group, choose **Selected tabs** and tick the tabs. In the side panel, the tab you're on is ticked for you. Tab choices last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
+4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
-A group shows **Inactive** until it has at least one valid pattern and one valid header, and, if it's limited to selected tabs, one of them is open.
+A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
 ## Pattern syntax
 
@@ -86,7 +86,7 @@ flowchart LR
 
 The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each pattern compiles to an anchored regex, rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
 
-Groups limited to selected tabs become session rules with a `tabIds` condition, the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the tab choices live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
+A group that targets tabs becomes a single session rule with a `tabIds` condition and no URL filter, so it matches every request from those tabs; session rules are the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the picks live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 
 ## Permissions
 

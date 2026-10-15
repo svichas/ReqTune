@@ -1,24 +1,23 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from 'react';
 import { ActionIcon, Collapse, Switch, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconAlertTriangle, IconAppWindow, IconChevronDown } from '@tabler/icons-react';
+import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
 import { type GroupActions, GroupMenu } from './GroupMenu';
+import { GroupTarget } from './GroupTarget';
 import { HeaderList } from './HeaderList';
-import { PatternList } from './PatternList';
-import { TabScope } from './TabScope';
 
 /** Where focus goes when a card mounts: a new group's first pattern, a duplicate's name, a restored group's menu. */
 export type FocusTarget = 'pattern' | 'name' | 'actions';
 
 interface Props extends GroupActions {
   group: Group;
-  /** Every open tab, to pick from and to tell whether a limited group still has a tab to apply in. */
+  /** Every open tab, to pick from and to tell whether a tabs group still has a tab to apply in. */
   tabs: OpenTab[];
-  /** The tabs picked for this group; only used while it is limited to tabs. */
+  /** The tabs picked for this group; only used while it targets tabs. */
   tabIds: number[];
   autoFocus?: FocusTarget;
   onChange: (group: Group) => void;
@@ -42,13 +41,14 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
     if (autoFocus === 'actions') actionsRef.current?.focus();
   }, []);
 
-  // Same filters as the worker's buildRules: without a usable pattern and header the group sends nothing.
-  const urls = group.patterns.filter((p) => patternToRegex(p) !== null).length;
+  // Same filters as the worker's buildRules: without a usable target (a valid pattern, or a picked tab that is still
+  // open) and a valid header the group sends nothing. Closed tabs make no more requests.
+  const byTabs = group.target === 'tabs';
+  const targets = byTabs
+    ? tabs.filter((tab) => tabIds.includes(tab.id)).length
+    : group.patterns.filter((p) => patternToRegex(p) !== null).length;
   const headers = group.headers.filter((h) => isValidHeaderName(h.name.trim()) && isValidHeaderValue(h.value)).length;
-  // Picked tabs that have since closed don't count: they make no more requests.
-  const limitedTabs = group.limitToTabs ? tabs.filter((tab) => tabIds.includes(tab.id)).length : undefined;
-  const inactive = group.enabled && (urls === 0 || headers === 0 || limitedTabs === 0);
-  const limitNote = `Only in ${count(limitedTabs ?? 0, 'selected tab')}`;
+  const inactive = group.enabled && (targets === 0 || headers === 0);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
   const onHeaderClick = (e: MouseEvent<HTMLElement>) => {
@@ -92,14 +92,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
               Inactive
             </>
           ) : (
-            <>
-              {limitedTabs !== undefined && (
-                <Tooltip label={limitNote}>
-                  <IconAppWindow size={14} role="img" aria-label={limitNote} />
-                </Tooltip>
-              )}
-              {`${count(urls, 'URL')} · ${count(headers, 'header')}`}
-            </>
+            `${count(targets, byTabs ? 'tab' : 'URL')} · ${count(headers, 'header')}`
           )}
         </Text>
         <Tooltip label="Show or hide details">
@@ -117,24 +110,19 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
 
       <Collapse expanded={open} id={bodyId} transitionDuration={180} transitionTimingFunction="var(--rt-ease, ease)">
         <div className={classes.body}>
-          <PatternList
-            patterns={group.patterns}
+          <GroupTarget
+            group={group}
+            tabs={tabs}
+            tabIds={tabIds}
             autoFocus={autoFocus === 'pattern'}
-            required={group.enabled && urls === 0}
-            onChange={(next) => onChange({ ...group, patterns: next })}
+            required={group.enabled && targets === 0}
+            onChange={onChange}
+            onTabIdsChange={onTabIdsChange}
           />
           <HeaderList
             headers={group.headers}
             required={group.enabled && headers === 0}
             onChange={(next) => onChange({ ...group, headers: next })}
-          />
-          <TabScope
-            limited={!!group.limitToTabs}
-            tabs={tabs}
-            selected={tabIds}
-            required={group.enabled && limitedTabs === 0}
-            onLimitedChange={(limitToTabs) => onChange({ ...group, limitToTabs })}
-            onSelectedChange={onTabIdsChange}
           />
         </div>
       </Collapse>

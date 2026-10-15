@@ -4,29 +4,41 @@ import { IconPlus, IconX } from '@tabler/icons-react';
 import classes from './FieldList.module.css';
 
 interface Props {
-  label: string;
+  /** Omitted when the parent draws the label row itself, as GroupTarget does with its tabs. */
+  label?: string;
   /** The group is on but does nothing until this list has a valid entry. */
-  required: boolean;
+  required?: boolean;
   addLabel: string;
   onAdd: () => void;
   addRef: Ref<HTMLButtonElement>;
   children: ReactNode;
 }
 
+/** A list's label row: the label on the left, and "Required" on the right while the group needs an entry here. */
+export function FieldHead({ required, children }: { required: boolean; children: ReactNode }) {
+  return (
+    <div className={classes.head}>
+      {children}
+      {required && (
+        <Text span size="xs" c="orange">
+          Required
+        </Text>
+      )}
+    </div>
+  );
+}
+
 /** A quiet filled container: one row per entry, hairlines between rows, an "Add" row at the bottom. */
-export function FieldList({ label, required, addLabel, onAdd, addRef, children }: Props) {
+export function FieldList({ label, required = false, addLabel, onAdd, addRef, children }: Props) {
   return (
     <div>
-      <div className={classes.head}>
-        <Text span size="xs" fw={500} c="dimmed">
-          {label}
-        </Text>
-        {required && (
-          <Text span size="xs" c="orange">
-            Required
+      {label !== undefined && (
+        <FieldHead required={required}>
+          <Text span size="xs" fw={500} c="dimmed">
+            {label}
           </Text>
-        )}
-      </div>
+        </FieldHead>
+      )}
       <div className={classes.box}>
         {children}
         <UnstyledButton ref={addRef} className={classes.add} onClick={onAdd}>

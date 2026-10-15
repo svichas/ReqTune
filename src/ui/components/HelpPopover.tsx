@@ -46,7 +46,7 @@ export function HelpPopover() {
         </Text>
         <Text size="xs" className={classes.fact} mt="sm">
           <IconAppWindow size={14} />
-          To apply a group in some tabs only, open Tabs at the bottom of the group.
+          Switch a group from URL patterns to Tabs to send its headers on every request from the tabs you pick.
         </Text>
         <Text size="xs" className={classes.fact} mt="sm">
           <IconKeyboard size={14} />
