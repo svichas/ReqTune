@@ -53,6 +53,8 @@ Then load the `dist/` folder the same way.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
+The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
+
 A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
 ## Pattern syntax
