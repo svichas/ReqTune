@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Anchor, Box, Button } from '@mantine/core';
+import { Alert, Box, Button, UnstyledButton } from '@mantine/core';
 import { IconAlertTriangle, IconExternalLink, IconPlus } from '@tabler/icons-react';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
@@ -105,16 +105,10 @@ export function App() {
 
       {!isFullPage && (
         <footer className={classes.footer}>
-          <Anchor
-            component="button"
-            type="button"
-            size="xs"
-            className={classes.pageLink}
-            onClick={() => void openFullPage()}
-          >
-            <IconExternalLink size={14} />
+          <UnstyledButton className={classes.pageLink} onClick={() => void openFullPage()}>
+            <IconExternalLink size={16} />
             Open in full page
-          </Anchor>
+          </UnstyledButton>
         </footer>
       )}
 
