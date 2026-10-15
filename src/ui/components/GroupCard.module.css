@@ -87,7 +87,7 @@ input.name:focus {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px var(--rt-group-inset) var(--rt-group-inset);
+  padding: 12px var(--rt-group-inset) max(12px, var(--rt-group-inset));
 }
 
 /* Disabled groups recede; the switch stays crisp so turning one back on is obvious. */

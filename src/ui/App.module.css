@@ -9,15 +9,21 @@
   --rt-group-header-height: 44px;
 }
 
-/* Lifts the undo bar clear of the footer. */
+/* The side panel keeps more width for fields and lifts the undo bar clear of its footer. */
 .app:has(> .footer) {
+  --rt-group-inset: 8px;
   --rt-bottom-inset: 40px;
+}
+
+.app:has(> .footer) .main {
+  padding-inline: 4px;
 }
 
 .bar {
   flex: none;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
   height: 48px;
   padding-inline: var(--rt-side);
