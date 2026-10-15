@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Alert, Box, Button } from '@mantine/core';
-import { IconAlertTriangle, IconPlus } from '@tabler/icons-react';
+import { Alert, Anchor, Box, Button } from '@mantine/core';
+import { IconAlertTriangle, IconExternalLink, IconPlus } from '@tabler/icons-react';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
 import { EmptyState } from './components/EmptyState';
 import { type FocusTarget, GroupCard } from './components/GroupCard';
 import { HelpPopover } from './components/HelpPopover';
 import { type Deleted, UndoBar } from './components/UndoBar';
+import { isFullPage, openFullPage } from './fullPage';
 import { useGroups } from './hooks/useGroups';
 import { useSyncError } from './hooks/useSyncError';
 
@@ -89,6 +90,21 @@ export function App() {
 
         {!loading && groups.length === 0 && <EmptyState onAdd={addGroup} />}
       </main>
+
+      {!isFullPage && (
+        <footer className={classes.footer}>
+          <Anchor
+            component="button"
+            type="button"
+            size="xs"
+            className={classes.pageLink}
+            onClick={() => void openFullPage()}
+          >
+            <IconExternalLink size={14} />
+            Open in full page
+          </Anchor>
+        </footer>
+      )}
 
       <UndoBar deleted={deleted} onUndo={undo} onDismiss={() => setDeleted(undefined)} />
     </div>
