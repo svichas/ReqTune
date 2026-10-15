@@ -2,6 +2,7 @@
    Keyed on Mantine's scheme attribute, not light-dark(): the build lowers light-dark() into toggles that
    only work when color-scheme is a literal, and Mantine sets it through a variable. */
 :root {
+  --rt-canvas: var(--mantine-color-gray-0);
   --rt-fill: var(--mantine-color-gray-0);
   --rt-fill-hover: var(--mantine-color-gray-1);
   --rt-line: var(--mantine-color-gray-2);
@@ -9,6 +10,7 @@
 }
 
 :root[data-mantine-color-scheme='dark'] {
+  --rt-canvas: var(--mantine-color-dark-7);
   --rt-fill: var(--mantine-color-dark-5);
   --rt-fill-hover: var(--mantine-color-dark-4);
   --rt-line: var(--mantine-color-dark-7);

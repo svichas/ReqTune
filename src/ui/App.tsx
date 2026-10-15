@@ -55,10 +55,12 @@ export function App() {
   return (
     <div className={classes.app}>
       <header className={classes.bar}>
-        <h1 className={classes.brand}>
-          <Box component="img" src="/brand/logo.svg" alt="ReqTune" className={classes.logo} darkHidden />
-          <Box component="img" src="/brand/logo-dark.svg" alt="ReqTune" className={classes.logo} lightHidden />
-        </h1>
+        {isFullPage && (
+          <h1 className={classes.brand}>
+            <Box component="img" src="/brand/logo.svg" alt="ReqTune" className={classes.logo} darkHidden />
+            <Box component="img" src="/brand/logo-dark.svg" alt="ReqTune" className={classes.logo} lightHidden />
+          </h1>
+        )}
         <HelpPopover />
         {/* Disabled while loading: adding then would overwrite the stored groups with just the new one. */}
         <Button size="compact-sm" variant="light" leftSection={<IconPlus size={14} />} disabled={loading} onClick={addGroup}>
