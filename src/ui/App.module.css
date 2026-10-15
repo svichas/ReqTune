@@ -64,6 +64,10 @@
     --rt-group-inset: 20px;
     --rt-group-header-height: 52px;
   }
+
+  .app:not(:has(> .footer)) {
+    --rt-group-gap: 16px;
+  }
 }
 
 .footer {
