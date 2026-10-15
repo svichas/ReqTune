@@ -8,10 +8,12 @@ import { type FocusTarget, GroupCard } from './components/GroupCard';
 import { HelpPopover } from './components/HelpPopover';
 import { type Deleted, UndoBar } from './components/UndoBar';
 import { useGroups } from './hooks/useGroups';
+import { useOpenTabs } from './hooks/useOpenTabs';
 import { useSyncError } from './hooks/useSyncError';
 
 export function App() {
-  const { groups, setGroups, loading } = useGroups();
+  const { groups, setGroups, tabSelections, setTabSelections, loading } = useGroups();
+  const tabs = useOpenTabs();
   const syncError = useSyncError();
   const [focus, setFocus] = useState<{ id: string; target: FocusTarget }>();
   const [deleted, setDeleted] = useState<Deleted>();
@@ -26,14 +28,19 @@ export function App() {
     const group = { id: crypto.randomUUID(), name: `Group ${n}`, enabled: true, patterns: [''], headers: [{ name: '', value: '' }] };
     insertAt(groups.length, group, 'pattern');
   };
-  const duplicate = (i: number) =>
-    insertAt(i + 1, { ...groups[i], id: crypto.randomUUID(), name: `${groups[i].name} copy` }, 'name');
+  const duplicate = (i: number) => {
+    const copy = { ...groups[i], id: crypto.randomUUID(), name: `${groups[i].name} copy` };
+    const tabIds = tabSelections[groups[i].id];
+    if (tabIds) setTabSelections({ ...tabSelections, [copy.id]: tabIds });
+    insertAt(i + 1, copy, 'name');
+  };
   // List order is rule priority, so moving a group changes which header wins.
   const move = (i: number, delta: -1 | 1) => {
     const next = [...groups];
     [next[i], next[i + delta]] = [next[i + delta], next[i]];
     setGroups(next);
   };
+  // The group's tab selection stays in storage, so Undo brings it back too.
   const remove = (i: number, focusUndo: boolean) => {
     setDeleted({ group: groups[i], index: i, focusUndo });
     setGroups(groups.filter((_, j) => j !== i));
@@ -73,19 +80,24 @@ export function App() {
           </Alert>
         )}
 
-        {groups.map((group, i) => (
-          <GroupCard
-            key={group.id}
-            group={group}
-            autoFocus={focus?.id === group.id ? focus.target : undefined}
-            isFirst={i === 0}
-            isLast={i === groups.length - 1}
-            onChange={(next) => setGroups(groups.map((g, j) => (j === i ? next : g)))}
-            onDuplicate={() => duplicate(i)}
-            onMove={(delta) => move(i, delta)}
-            onDelete={(viaKeyboard) => remove(i, viaKeyboard)}
-          />
-        ))}
+        {/* Cards wait for the open tabs too, so tab-limited groups don't flash "Inactive" while they load. */}
+        {tabs &&
+          groups.map((group, i) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              tabs={tabs}
+              tabIds={tabSelections[group.id] ?? []}
+              autoFocus={focus?.id === group.id ? focus.target : undefined}
+              isFirst={i === 0}
+              isLast={i === groups.length - 1}
+              onChange={(next) => setGroups(groups.map((g, j) => (j === i ? next : g)))}
+              onTabIdsChange={(tabIds) => setTabSelections({ ...tabSelections, [group.id]: tabIds })}
+              onDuplicate={() => duplicate(i)}
+              onMove={(delta) => move(i, delta)}
+              onDelete={(viaKeyboard) => remove(i, viaKeyboard)}
+            />
+          ))}
 
         {!loading && groups.length === 0 && <EmptyState onAdd={addGroup} />}
       </main>

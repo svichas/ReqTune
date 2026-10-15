@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { ActionIcon, Code, Divider, Popover, Text, Tooltip } from '@mantine/core';
-import { IconArrowBarToUp, IconCloudCheck, IconHelp, IconKeyboard } from '@tabler/icons-react';
+import { IconAppWindow, IconArrowBarToUp, IconCloudCheck, IconHelp, IconKeyboard } from '@tabler/icons-react';
 import classes from './HelpPopover.module.css';
 
 const SYNTAX = [
@@ -43,6 +43,10 @@ export function HelpPopover() {
         <Text size="xs" className={classes.fact}>
           <IconArrowBarToUp size={14} />
           When two groups set the same header, the one higher in the list wins.
+        </Text>
+        <Text size="xs" className={classes.fact} mt="sm">
+          <IconAppWindow size={14} />
+          To apply a group in some tabs only, open Tabs at the bottom of the group.
         </Text>
         <Text size="xs" className={classes.fact} mt="sm">
           <IconKeyboard size={14} />
