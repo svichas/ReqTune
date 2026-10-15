@@ -3,7 +3,7 @@
   "name": "ReqTune",
   "version": "0.1.0",
   "description": "Set request headers on URLs matching wildcard patterns, organized in groups.",
-  "permissions": ["declarativeNetRequestWithHostAccess", "storage", "sidePanel"],
+  "permissions": ["declarativeNetRequestWithHostAccess", "storage", "sidePanel", "favicon"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js", "type": "module" },
   "side_panel": { "default_path": "index.html" },
