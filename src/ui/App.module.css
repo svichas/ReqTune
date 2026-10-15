@@ -9,7 +9,7 @@
 
 /* Lifts the undo bar clear of the footer. */
 .app:has(> .footer) {
-  --rt-bottom-inset: 36px;
+  --rt-bottom-inset: 40px;
 }
 
 .bar {
@@ -50,16 +50,37 @@
 .footer {
   flex: none;
   display: flex;
-  align-items: center;
-  height: 36px;
-  padding-inline: 12px;
+  height: 40px;
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
+/* The whole footer is the button, tinted like "New group" so it reads as an action, not fine print. */
 .pageLink {
-  display: inline-flex;
+  flex: 1;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-primary-color-light-color);
+  background: var(--mantine-primary-color-light);
+  transition: background-color var(--rt-duration-fast, 120ms) ease;
+}
+
+.pageLink:hover {
+  background: var(--mantine-primary-color-light-hover);
+}
+
+/* Edge to edge, so draw Mantine's focus ring inside. */
+.pageLink:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageLink {
+    transition: none;
+  }
 }
 
 .alertMessage {
