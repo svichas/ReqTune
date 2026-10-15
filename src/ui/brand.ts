@@ -8,8 +8,8 @@ import { createTheme, rem, type CSSVariablesResolver, type MantineColorsTuple } 
  * The resolver is required for dark-mode error/success text contrast (Mantine hard-codes red.8 / teal.8 there).
  *
  * Quick reference
- *   primary    color="tune" (deep teal): fills, switches, links, focus ring. Fill = tune.6 (light) / tune.5 (dark), white text.
- *   accent     color="amber", sparingly (the mark's knob, a "modified" dot). It is also the warning hue. Never for errors.
+ *   primary    color="tune" (cobalt blue): fills, switches, links, focus ring. Fill = tune.6 (light) / tune.5 (dark), white text.
+ *   accent     color="amber", sparingly (a "modified" dot). It is also the warning hue. Never for errors.
  *   semantic   red = danger and errors, green = success, amber (aliases yellow, orange) = warning,
  *              tune (aliases blue, indigo, teal, cyan) = info. Pair color with an icon or words, never color alone.
  *   neutrals   light: gray.0-9, text = black (ink), c="dimmed" = gray.6, placeholder = gray.5, hairline = gray.4.
@@ -26,25 +26,25 @@ import { createTheme, rem, type CSSVariablesResolver, type MantineColorsTuple } 
  *   5 takes white text at >= 4.5:1 (dark-mode fill);
  *   4 reads >= 5.5:1 on the dark surfaces (Mantine uses it for text and links on ink);
  *   9 is the text on 1-tints (light variant), and the base of the dark-mode tint;
- *   3 is the brightest decorative tone (amber.3 is the mark's knob).
+ *   3 is a decorative tone, never a text color. The mark uses tune.6 and white only.
  *
  * Mantine caveats: Menu.Item color="red" hard-codes red.6 in both schemes (about 3:1 on dark surfaces), so use
  * c="var(--mantine-color-red-text)" (red.6 in light, red.4 in dark) for destructive items; variant="outline" turns pale in dark mode.
  */
 
-const ink = '#0e191e';
+const ink = '#121923';
 
 const tune: MantineColorsTuple = [
-  '#e8f7f7', // 0
-  '#d0eded', // 1
-  '#a7dddd', // 2
-  '#68c9ca', // 3
-  '#1ab3b5', // 4
-  '#068081', // 5
-  '#067576', // 6
-  '#02696a', // 7
-  '#056162', // 8
-  '#0a595a', // 9
+  '#f1f5ff', // 0
+  '#e2eaff', // 1
+  '#c8d7ff', // 2
+  '#a3bdff', // 3
+  '#7da2ff', // 4
+  '#416ce1', // 5
+  '#3358c8', // 6
+  '#2949ad', // 7
+  '#233e91', // 8
+  '#203574', // 9
 ];
 
 const amber: MantineColorsTuple = [
@@ -87,29 +87,29 @@ const red: MantineColorsTuple = [
 ];
 
 const gray: MantineColorsTuple = [
-  '#f4f7f9', // 0
-  '#eef2f4', // 1
-  '#e4e9eb', // 2
-  '#d6dcdf', // 3
-  '#c1cbcf', // 4
-  '#68777f', // 5
-  '#55666e', // 6
-  '#40525a', // 7
-  '#2a3b43', // 8
-  '#14242b', // 9
+  '#f6f7f9', // 0
+  '#eef0f3', // 1
+  '#e4e7ec', // 2
+  '#d5dae2', // 3
+  '#bdc5d0', // 4
+  '#697484', // 5
+  '#536071', // 6
+  '#3e4a5b', // 7
+  '#2b3544', // 8
+  '#1b2430', // 9
 ];
 
 const dark: MantineColorsTuple = [
-  '#e6eef2', // 0
-  '#cad5da', // 1
-  '#9eaeb5', // 2
-  '#85959d', // 3
-  '#2c3c43', // 4
-  '#1f2c33', // 5
-  '#162228', // 6
-  '#0e191e', // 7
-  '#081115', // 8
-  '#040a0e', // 9
+  '#edf0f5', // 0
+  '#d1d7e0', // 1
+  '#a8b2c1', // 2
+  '#8d99ab', // 3
+  '#353f50', // 4
+  '#222b38', // 5
+  '#1b2330', // 6
+  '#121923', // 7
+  '#0c121b', // 8
+  '#080d14', // 9
 ];
 
 const fontFamily =
@@ -117,7 +117,7 @@ const fontFamily =
 const fontFamilyMonospace =
   'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace';
 
-const shadowInk = '14 25 30'; // = ink, as rgb()
+const shadowInk = '18 25 35'; // = ink, as rgb()
 
 export const brandTheme = createTheme({
   primaryColor: 'tune',

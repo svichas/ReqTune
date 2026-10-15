@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="ReqTune">
-<title>ReqTune</title>
-<defs>
-  <linearGradient id="tile-icon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1ab3b5"/><stop offset="1" stop-color="#02696a"/></linearGradient>
-  <linearGradient id="sheen-icon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient>
-</defs>
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#tile-icon)"/>
-  <rect x="5" y="5" width="118" height="118" rx="27" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>
-  <g fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M17 64H109"/><path d="M88 43L109 64L88 85"/></g>
-  <circle cx="54" cy="64" r="28" fill="#ffa704"/>
-  <circle cx="54" cy="64" r="28" fill="url(#sheen-icon)"/>
-  <circle cx="54" cy="64" r="26.5" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2.5"/>
-  <path d="M54 54V43" stroke="#0a595a" stroke-width="8" stroke-linecap="round" transform="rotate(38 54 64)"/>
+  <title>ReqTune</title>
+  <desc>A request arrow with a single tuning slider on a cobalt tile.</desc>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#3358c8"/>
+  <path d="M28 64H36M74 64H100M84 48L100 64L84 80" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="48" y="40" width="14" height="48" rx="7" fill="#ffffff"/>
 </svg>
