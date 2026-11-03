@@ -1,0 +1,79 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ReqTune store images</title>
+<style>
+  /* One frame per Chrome Web Store image, shown by its #id. Render with docs/store/render.sh */
+  :root { --bg: #121923; --text: #edf0f5; --dimmed: #a8b2c1; --border: #353f50; --surface: #1b2330; --divider: #121923; }
+  .light { --bg: #ffffff; --text: #121923; --dimmed: #536071; --border: #bdc5d0; --surface: #ffffff; --divider: #e4e7ec; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .frame { display: none; position: relative; overflow: hidden; background: var(--bg); color: var(--text); }
+  .frame:target { display: block; }
+  .s { width: 1280px; height: 800px; }
+  .t { width: 440px; height: 280px; }
+  .m { width: 1400px; height: 560px; }
+
+  .logo { position: absolute; display: block; }
+  .copy { position: absolute; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 24px; }
+  h1 { font-size: 56px; line-height: 1.12; font-weight: 600; letter-spacing: -0.01em; }
+  p { font-size: 24px; line-height: 1.5; color: var(--dimmed); }
+  .panel { position: absolute; display: block; border: 1px solid var(--border); border-radius: 12px; }
+
+  .card { position: absolute; left: 600px; top: 50%; transform: translateY(-50%); width: 600px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .row { display: grid; grid-template-columns: 270px 1fr; gap: 16px; align-items: center; padding: 20px 24px; }
+  .row + .row { border-top: 1px solid var(--divider); }
+  .row.head { padding: 16px 24px; font-size: 14px; color: var(--dimmed); }
+  code { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 20px; }
+  .row span { font-size: 18px; color: var(--dimmed); }
+
+  .center { flex-direction: column; align-items: center; justify-content: center; gap: 32px; }
+  .center:target { display: flex; }
+  .center p { font-size: 20px; }
+</style>
+
+<section id="s1" class="frame s">
+  <img class="logo" src="../../public/brand/logo-dark.svg" alt="ReqTune" style="left:80px;top:80px;height:48px">
+  <div class="copy" style="left:80px;width:560px">
+    <h1>Set request headers on the URLs you choose.</h1>
+    <p>Groups you switch on and off, right from Chrome's side panel.</p>
+  </div>
+  <img class="panel" src="../panel-dark.png" alt="" style="left:720px;top:40px;width:480px">
+</section>
+
+<section id="s2" class="frame s light">
+  <div class="copy" style="left:640px;width:560px">
+    <h1>Switch groups on and off.</h1>
+    <p>Pause a group without losing its headers. When groups set the same header, the one higher in the list wins.</p>
+  </div>
+  <img class="panel" src="../panel-light.png" alt="" style="left:80px;top:40px;width:480px">
+</section>
+
+<section id="s3" class="frame s">
+  <div class="copy" style="left:80px;width:460px">
+    <h1>Match URLs with wildcard patterns.</h1>
+    <p>A * matches any characters. In a host it never crosses a /.</p>
+  </div>
+  <div class="card">
+    <div class="row head"><div>Pattern</div><div>Matches</div></div>
+    <div class="row"><code>example.com</code><span>Every URL on the site</span></div>
+    <div class="row"><code>*.example.com</code><span>The site and all subdomains</span></div>
+    <div class="row"><code>api.example.com/v1/*</code><span>Everything under /v1/</span></div>
+    <div class="row"><code>localhost:3000</code><span>Only port 3000</span></div>
+    <div class="row"><code>https://example.com/*</code><span>HTTPS requests only</span></div>
+    <div class="row"><code>/graphql</code><span>That path on any host</span></div>
+  </div>
+</section>
+
+<section id="tile" class="frame t center">
+  <img class="logo" src="../../public/brand/logo-dark.svg" alt="ReqTune" style="position:static;height:56px">
+  <p>Set request headers by URL</p>
+</section>
+
+<section id="marquee" class="frame m">
+  <img class="logo" src="../../public/brand/logo-dark.svg" alt="ReqTune" style="left:80px;top:64px;height:56px">
+  <div class="copy" style="left:80px;width:700px;padding-top:56px">
+    <h1>Set request headers on the URLs you choose.</h1>
+    <p>Groups you switch on and off, right from Chrome's side panel.</p>
+  </div>
+  <img class="panel" src="../panel-dark.png" alt="" style="left:880px;top:80px;width:440px">
+</section>

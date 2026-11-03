@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ReqTune social preview</title>
+<style>
+  /* Render with: Chrome headless, --window-size=1280,640 (GitHub's social preview size) */
+  :root { --ink: #121923; --text: #edf0f5; --dimmed: #a8b2c1; --border: #353f50; --link: #7da2ff; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    position: relative;
+    background: var(--ink);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .logo { position: absolute; left: 80px; top: 80px; height: 56px; }
+  h1 { position: absolute; left: 80px; top: 232px; width: 620px; font-size: 60px; line-height: 1.12; font-weight: 600; letter-spacing: -0.01em; }
+  p { position: absolute; left: 80px; top: 424px; width: 560px; font-size: 24px; line-height: 1.5; color: var(--dimmed); }
+  .tag { position: absolute; left: 80px; bottom: 80px; font-size: 18px; font-weight: 500; color: var(--link); }
+  .panel { position: absolute; left: 760px; top: 80px; width: 440px; border: 1px solid var(--border); border-radius: 12px; display: block; }
+</style>
+<img class="logo" src="../public/brand/logo-dark.svg" alt="ReqTune">
+<h1>Set request headers on the URLs you choose.</h1>
+<p>Groups you switch on and off,<br>right from Chrome's side panel.</p>
+<div class="tag">Chrome extension</div>
+<img class="panel" src="panel-dark.png" alt="">
