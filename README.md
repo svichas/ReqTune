@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://svichas.github.io/ReqTune/">svichas.github.io/ReqTune</a>
+</p>
+
+<p align="center">
   <img src="docs/panel-light.png" width="340" alt="ReqTune side panel in the light theme">
   &nbsp;
   <img src="docs/panel-dark.png" width="340" alt="ReqTune side panel in the dark theme">
