@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReqTune: set request headers on the URLs you choose</title>
+<meta name="description" content="ReqTune is a free, open-source Chrome extension that sets HTTP request headers on the URLs you choose, in groups you switch on and off from the side panel.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://svichas.github.io/ReqTune/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect x='4' y='4' width='120' height='120' rx='28' fill='%233358c8'/%3E%3Cpath d='M28 64H36M74 64H100M84 48L100 64L84 80' fill='none' stroke='%23fff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='48' y='40' width='14' height='48' rx='7' fill='%23fff'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ReqTune">
+<meta property="og:title" content="ReqTune: set request headers on the URLs you choose">
+<meta property="og:description" content="A free, open-source Chrome extension. Groups of request headers you switch on and off, right from Chrome's side panel.">
+<meta property="og:url" content="https://svichas.github.io/ReqTune/">
+<meta property="og:image" content="https://svichas.github.io/ReqTune/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="ReqTune: set request headers on the URLs you choose.">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  /* Tokens from brand.md (src/ui/brand.ts is the source of truth). */
+  :root {
+    --bg: #ffffff;
+    --band: #f6f7f9;
+    --surface: #ffffff;
+    --hover: #f6f7f9;
+    --code: #eef0f3;
+    --border: #bdc5d0;
+    --divider: #e4e7ec;
+    --text: #121923;
+    --dimmed: #536071;
+    --fill: #3358c8;
+    --fill-hover: #2949ad;
+    --link: #3358c8;
+    --tint: #e2eaff;
+    --tint-text: #203574;
+    --added: #02793c;
+    --shadow: 0 12px 32px rgb(18 25 35 / 0.12), 0 2px 6px rgb(18 25 35 / 0.06);
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 18l6-6M13 6l6 6'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121923;
+      --band: #0c121b;
+      --surface: #1b2330;
+      --hover: #222b38;
+      --code: #222b38;
+      --border: #353f50;
+      --divider: #121923;
+      --text: #edf0f5;
+      --dimmed: #a8b2c1;
+      --fill: #416ce1;
+      --fill-hover: #3358c8;
+      --link: #7da2ff;
+      --tint: rgb(32 53 116 / 0.5);
+      --tint-text: #f1f5ff;
+      --added: #38b868;
+      --shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, p, ol, ul, pre, dl, dd { margin: 0; }
+  h1, h2, h3 { font-weight: 600; text-wrap: balance; }
+  p, li, dd { text-wrap: pretty; }
+  a { color: var(--link); text-underline-offset: 3px; }
+  code, pre { font-family: var(--mono); }
+  :not(pre) > code { font-size: 0.875em; background: var(--code); padding: 0.125em 0.375em; border-radius: 4px; }
+  :focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
+  .i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .wrap { width: min(1120px, 100% - 40px); margin-inline: auto; }
+  .skip { position: absolute; left: 16px; top: -64px; z-index: 1; padding: 8px 12px; border-radius: 6px; background: var(--fill); color: #fff; }
+  .skip:focus { top: 12px; }
+
+  /* Header */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 72px; }
+  .brand { display: flex; color: var(--text); }
+  .nav { display: flex; align-items: center; gap: 4px; }
+  .nav a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; color: var(--dimmed); font-size: 0.9375rem; font-weight: 500; text-decoration: none; }
+  .nav a:hover { color: var(--text); background: var(--hover); }
+  .nav .gh { margin-left: 8px; border: 1px solid var(--border); color: var(--text); }
+  @media (max-width: 720px) { .nav a:not(.gh) { display: none; } }
+
+  /* Buttons */
+  .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: 6px; font: 600 0.9375rem/1.2 var(--sans); text-decoration: none; }
+  .btn .i { width: 18px; height: 18px; }
+  .btn-primary { background: var(--fill); color: #fff; }
+  .btn-primary[href]:hover { background: var(--fill-hover); }
+  .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: var(--hover); }
+  .btn-quiet { padding-inline: 10px; color: var(--link); }
+  .btn-quiet:hover { text-decoration: underline; }
+  /* A .store link without an href is a placeholder until the Chrome Web Store listing is live. */
+  .store:not([href]) { cursor: default; }
+  .store[href] .soon { display: none; }
+  .soon { padding: 3px 6px; border-radius: 4px; background: rgb(0 0 0 / 0.22); font-size: 0.75rem; }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 64px; padding-block: 40px 112px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px; border-radius: 6px; background: var(--tint); color: var(--tint-text); font-size: 0.875rem; font-weight: 500; text-decoration: none; }
+  .pill .i { width: 16px; height: 16px; }
+  .hero h1 { margin-top: 20px; font-size: clamp(2.5rem, 1.6rem + 3.2vw, 3.5rem); line-height: 1.08; letter-spacing: -0.025em; }
+  .lead { margin-top: 20px; max-width: 34em; color: var(--dimmed); font-size: 1.1875rem; line-height: 1.55; }
+  .hero .ctas { margin-top: 32px; }
+  .meta { margin-top: 20px; color: var(--dimmed); font-size: 0.875rem; }
+  .shot { position: relative; width: 360px; }
+  .shot img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 12px; }
+  .req { position: absolute; left: -48px; right: 0; bottom: -40px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); font: 12.5px/1.75 var(--mono); }
+  .req-url { margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--divider); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .method { margin-right: 4px; color: var(--link); font-weight: 600; }
+  .req-h { color: var(--dimmed); white-space: nowrap; }
+  .req-h.add { color: var(--added); }
+  .req-note { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider); color: var(--dimmed); font: 500 13px/1.4 var(--sans); }
+  .req-note .i { width: 16px; height: 16px; color: var(--added); }
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: minmax(0, 1fr); gap: 56px; padding-top: 24px; }
+    .shot { justify-self: center; }
+  }
+  @media (max-width: 600px) {
+    .shot { width: 100%; max-width: 360px; }
+    .req { position: static; margin-top: 16px; box-shadow: none; }
+    .hero { padding-bottom: 80px; }
+  }
+
+  /* Sections */
+  .band { background: var(--band); }
+  .section { padding-block: 96px; }
+  .kicker { color: var(--link); font-size: 0.9375rem; font-weight: 600; }
+  .section h2 { margin-top: 8px; max-width: 24ch; font-size: clamp(1.875rem, 1.4rem + 1.7vw, 2.5rem); line-height: 1.15; letter-spacing: -0.02em; }
+  .sub { margin-top: 16px; max-width: 40em; color: var(--dimmed); font-size: 1.0625rem; }
+  .card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 24px; }
+  .icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 8px; background: var(--tint); color: var(--link); }
+  @media (max-width: 640px) { .section { padding-block: 72px; } .card { padding: 20px; } }
+
+  /* Features */
+  .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 48px; padding: 0; list-style: none; }
+  .features h3 { margin-top: 16px; font-size: 1.0625rem; }
+  .features p { margin-top: 6px; color: var(--dimmed); font-size: 0.9375rem; }
+  @media (max-width: 960px) { .features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .features { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Patterns */
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+  @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+  .notes { display: grid; gap: 10px; margin-top: 28px; padding-left: 20px; color: var(--dimmed); font-size: 0.9375rem; }
+  .table { overflow: hidden; padding: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  th { padding: 12px 20px; color: var(--dimmed); font-size: 0.875rem; font-weight: 500; text-align: left; }
+  td { padding: 14px 20px; border-top: 1px solid var(--divider); vertical-align: top; }
+  td:first-child { width: 46%; overflow-wrap: anywhere; }
+  td code { font-size: 0.875rem; background: none; padding: 0; }
+  @media (max-width: 640px) { th, td { padding-inline: 14px; } }
+
+  /* How it works */
+  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 40px; margin-top: 48px; padding: 0; list-style: none; }
+  .flow li { position: relative; display: grid; align-content: start; gap: 6px; padding: 20px; }
+  .flow li + li::before { content: ""; position: absolute; top: 50%; left: -32px; width: 24px; height: 24px; margin-top: -12px; background: var(--dimmed); -webkit-mask: var(--arrow) center / 20px no-repeat; mask: var(--arrow) center / 20px no-repeat; }
+  .flow b { font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
+  .flow b code { font-size: 0.875rem; background: none; padding: 0; }
+  .flow span { color: var(--dimmed); font-size: 0.875rem; line-height: 1.5; }
+  @media (max-width: 1100px) {
+    .flow { grid-template-columns: minmax(0, 1fr); gap: 32px; max-width: 420px; }
+    .flow li + li::before { top: -28px; left: 50%; margin: 0 0 0 -12px; rotate: 90deg; }
+  }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 56px; }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin-top: 6px; color: var(--dimmed); font-size: 0.9375rem; }
+  .more { display: inline-flex; align-items: center; gap: 6px; margin-top: 32px; font-weight: 500; }
+  .more .i { width: 18px; height: 18px; }
+  @media (max-width: 900px) { .facts { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+
+  /* Open source */
+  .checks { display: grid; gap: 12px; margin-top: 28px; padding: 0; list-style: none; }
+  .checks li { display: flex; gap: 10px; }
+  .checks .i { margin-top: 2px; color: var(--added); }
+  .oss .ctas { margin-top: 32px; }
+  .links { display: grid; gap: 12px; }
+  .link-card { display: flex; align-items: flex-start; gap: 16px; padding: 20px; color: var(--text); text-decoration: none; }
+  .link-card:hover { border-color: var(--fill); }
+  .link-card .t { display: block; font-weight: 600; }
+  .link-card .d { display: block; margin-top: 4px; color: var(--dimmed); font-size: 0.9375rem; }
+  .link-card .go { margin-left: auto; align-self: center; color: var(--dimmed); }
+  .link-card:hover .go { color: var(--link); translate: 2px 0; }
+
+  /* Install */
+  .install { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 48px; }
+  .install .card > * + * { margin-top: 16px; }
+  .install h3 { display: flex; align-items: center; gap: 12px; font-size: 1.125rem; }
+  .install p { color: var(--dimmed); }
+  .store-card { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+  .install .store-card > * + * { margin-top: 0; }
+  .store-card p { margin-top: 8px; }
+  .steps { display: grid; gap: 8px; padding-left: 1.25rem; }
+  pre { overflow-x: auto; padding: 16px; border-radius: 6px; background: var(--code); font-size: 0.875rem; line-height: 1.7; }
+  @media (max-width: 760px) { .install { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Footer */
+  .foot { padding-block: 40px 48px; border-top: 1px solid var(--divider); }
+  .foot-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; }
+  .foot nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  .foot nav a { color: var(--dimmed); font-size: 0.9375rem; text-decoration: none; }
+  .foot nav a:hover { color: var(--text); text-decoration: underline; }
+  .fine { margin-top: 24px; color: var(--dimmed); font-size: 0.8125rem; }
+  .fine a { color: inherit; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html:focus-within { scroll-behavior: smooth; }
+    a, .btn, .go { transition: color 120ms var(--ease), background-color 120ms var(--ease), border-color 120ms var(--ease), translate 120ms var(--ease); }
+  }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- Logo: public/brand/logo.svg with the wordmark in currentColor. Icons: Tabler Icons (MIT), outline. -->
+  <symbol id="logo" viewBox="2 2 515 124">
+    <rect x="4" y="4" width="120" height="120" rx="28" fill="#3358c8"/>
+    <path d="M28 64H36M74 64H100M84 48L100 64L84 80" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="48" y="40" width="14" height="48" rx="7" fill="#ffffff"/>
+    <g fill="currentColor">
+      <path d="M167.88 94L157.83 94L157.83 34L182.63 34Q183.5 34 184.88 34.06Q186.25 34.12 187.42 34.33L187.42 34.33Q192.63 35.12 196.02 37.79Q199.42 40.46 201.06 44.52Q202.71 48.58 202.71 53.54L202.71 53.54Q202.71 60.87 199 66.13L199 66.13Q196.63 69.54 192.58 71.25L192.58 71.25L203.67 94L192.29 94L182.13 73.04L167.88 73.04L167.88 94M167.88 43.42L167.88 63.67L182.21 63.67Q183.04 63.67 184.08 63.58Q185.13 63.5 186 63.25L186 63.25Q188.5 62.63 189.94 61.04Q191.38 59.46 191.98 57.46Q192.58 55.46 192.58 53.54Q192.58 51.62 191.98 49.6Q191.38 47.58 189.94 46Q188.5 44.42 186 43.79L186 43.79Q185.13 43.54 184.08 43.48Q183.04 43.42 182.21 43.42L182.21 43.42L167.88 43.42M234.13 95.25L234.13 95.25Q227.29 95.25 222.13 92.29Q216.96 89.33 214.06 84.08Q211.17 78.83 211.17 72L211.17 72Q211.17 64.63 214 59.19Q216.83 53.75 221.88 50.75Q226.92 47.75 233.54 47.75L233.54 47.75Q240.54 47.75 245.44 51.02Q250.33 54.29 252.71 60.25Q255.08 66.21 254.5 74.29L254.5 74.29L221.92 74.29Q222.42 79.13 224.79 82.08L224.79 82.08Q227.79 85.83 233.54 85.83L233.54 85.83Q237.25 85.83 239.94 84.19Q242.63 82.54 244.08 79.42L244.08 79.42L254 82.42Q251.42 88.5 246.02 91.88Q240.63 95.25 234.13 95.25M222.17 66.71L244.29 66.71Q243.75 62.33 241.96 59.92L241.96 59.92Q239.42 56.54 233.96 56.54L233.96 56.54Q227.79 56.54 224.79 60.33L224.79 60.33Q222.88 62.79 222.17 66.71L222.17 66.71M282.71 95.25L282.71 95.25Q276.5 95.25 271.88 92.13Q267.25 89 264.71 83.63Q262.17 78.25 262.17 71.5L262.17 71.5Q262.17 64.67 264.73 59.31Q267.29 53.96 272 50.85Q276.71 47.75 283.08 47.75L283.08 47.75Q289.5 47.75 293.88 50.83L293.88 50.83Q294.75 51.5 295.54 52.21L295.54 52.21L295.54 49L304.42 49L304.42 114L294.29 114L294.29 91.75Q294.04 91.92 293.75 92.13L293.75 92.13Q289.29 95.25 282.71 95.25M284.25 86.25L284.25 86.25Q288.29 86.25 290.77 84.4Q293.25 82.54 294.4 79.21Q295.54 75.88 295.54 71.5L295.54 71.5Q295.54 67.08 294.4 63.77Q293.25 60.46 290.83 58.6Q288.42 56.75 284.58 56.75L284.58 56.75Q280.54 56.75 277.92 58.73Q275.29 60.71 274.04 64.06Q272.79 67.42 272.79 71.5L272.79 71.5Q272.79 75.63 274.02 78.98Q275.25 82.33 277.79 84.29Q280.33 86.25 284.25 86.25"/>
+      <path d="M341.38 94L331.33 94L331.33 43.42L311.92 43.42L311.92 34L360.79 34L360.79 43.42L341.38 43.42L341.38 94M381 95.29L381 95.29Q376 95.29 372.75 93.63Q369.5 91.96 367.58 89.38Q365.67 86.79 364.75 83.88Q363.83 80.96 363.56 78.35Q363.29 75.75 363.29 74.13L363.29 74.13L363.29 49L373.46 49L373.46 70.67Q373.46 72.75 373.75 75.35Q374.04 77.96 375.1 80.35Q376.17 82.75 378.27 84.29Q380.38 85.83 383.96 85.83L383.96 85.83Q385.88 85.83 387.75 85.21Q389.63 84.58 391.15 83.06Q392.67 81.54 393.58 78.88Q394.5 76.21 394.5 72.13L394.5 72.13L394.5 49L404.58 49L404.58 94L395.71 94L395.71 89Q394 91.04 391.67 92.5L391.67 92.5Q387.33 95.29 381 95.29M458.38 94L448.21 94L448.21 72.33Q448.21 70.21 447.92 67.63Q447.63 65.04 446.56 62.65Q445.5 60.25 443.4 58.71Q441.29 57.17 437.71 57.17L437.71 57.17Q435.79 57.17 433.92 57.79Q432.04 58.42 430.52 59.94Q429 61.46 428.08 64.1Q427.17 66.75 427.17 70.88L427.17 70.88L427.17 94L417 94L417 49L425.96 49L425.96 54Q427.67 51.96 430 50.46L430 50.46Q434.33 47.71 440.67 47.71L440.67 47.71Q445.67 47.71 448.92 49.37Q452.17 51.04 454.08 53.62Q456 56.21 456.92 59.12Q457.83 62.04 458.1 64.65Q458.38 67.25 458.38 68.88L458.38 68.88L458.38 94M489.79 95.25L489.79 95.25Q482.96 95.25 477.79 92.29Q472.63 89.33 469.73 84.08Q466.83 78.83 466.83 72L466.83 72Q466.83 64.63 469.67 59.19Q472.5 53.75 477.54 50.75Q482.58 47.75 489.21 47.75L489.21 47.75Q496.21 47.75 501.1 51.02Q506 54.29 508.38 60.25Q510.75 66.21 510.17 74.29L510.17 74.29L477.58 74.29Q478.08 79.13 480.46 82.08L480.46 82.08Q483.46 85.83 489.21 85.83L489.21 85.83Q492.92 85.83 495.6 84.19Q498.29 82.54 499.75 79.42L499.75 79.42L509.67 82.42Q507.08 88.5 501.69 91.88Q496.29 95.25 489.79 95.25M477.83 66.71L499.96 66.71Q499.42 62.33 497.63 59.92L497.63 59.92Q495.08 56.54 489.63 56.54L489.63 56.54Q483.46 56.54 480.46 60.33L480.46 60.33Q478.54 62.79 477.83 66.71L477.83 66.71"/>
+    </g>
+  </symbol>
+  <symbol id="i-stack" viewBox="0 0 24 24"><path d="M12 4l-8 4l8 4l8 -4l-8 -4"/><path d="M4 12l8 4l8 -4"/><path d="M4 16l8 4l8 -4"/></symbol>
+  <symbol id="i-asterisk" viewBox="0 0 24 24"><path d="M12 12l8 -4.5"/><path d="M12 12v9"/><path d="M12 12l-8 -4.5"/><path d="M12 12l8 4.5"/><path d="M12 3v9"/><path d="M12 12l-8 4.5"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10"/><path d="M6 8h.01"/><path d="M9 8h.01"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M3 9l4 -4l4 4m-4 -4v14"/><path d="M21 15l-4 4l-4 -4m4 4v-14"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M2 8a2 2 0 0 1 2 -2h16a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2l0 -8"/><path d="M6 10l0 .01"/><path d="M10 10l0 .01"/><path d="M14 10l0 .01"/><path d="M18 10l0 .01"/><path d="M6 14l0 .01"/><path d="M18 14l0 .01"/><path d="M10 14l4 .01"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M15 4l0 16"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"/></symbol>
+  <symbol id="i-chrome" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M12 9h8.4"/><path d="M14.598 13.5l-4.2 7.275"/><path d="M9.402 13.5l-4.2 -7.275"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M7 8l-4 4l4 4"/><path d="M17 8l4 4l-4 4"/><path d="M14 4l-4 16"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24"><path d="M9 9v-1a3 3 0 0 1 6 0v1"/><path d="M8 9h8a6 6 0 0 1 1 3v3a5 5 0 0 1 -10 0v-3a6 6 0 0 1 1 -3"/><path d="M3 13l4 0"/><path d="M17 13l4 0"/><path d="M12 20l0 -6"/><path d="M4 19l3.35 -2"/><path d="M20 19l-3.35 -2"/><path d="M4 7l3.75 2.4"/><path d="M20 7l-3.75 2.4"/></symbol>
+  <symbol id="i-pr" viewBox="0 0 24 24"><path d="M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M16 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6 8l0 8"/><path d="M11 6h5a2 2 0 0 1 2 2v8"/><path d="M14 9l-3 -3l3 -3"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12l14 0"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="wrap bar">
+  <a class="brand" href="./" aria-label="ReqTune home"><svg width="116" height="28" aria-hidden="true"><use href="#logo"/></svg></a>
+  <nav class="nav" aria-label="Primary">
+    <a href="#features">Features</a>
+    <a href="#patterns">Patterns</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#install">Install</a>
+    <a class="gh" href="https://github.com/svichas/ReqTune"><svg class="i" aria-hidden="true"><use href="#i-github"/></svg>GitHub</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div>
+      <a class="pill" href="#open-source">Free and open source · MIT licensed <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      <h1 id="hero-title">Set request headers on the URLs you choose.</h1>
+      <p class="lead">Pair wildcard URL patterns with the headers to send, in groups you switch on and off from Chrome's side panel. Chrome applies them natively, and nothing leaves your device.</p>
+      <div class="ctas">
+        <!-- Chrome Web Store: once the listing is approved, add href="<listing URL>" to both .store links. Their "Coming soon" labels then hide themselves. -->
+        <a class="btn btn-primary store"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome <span class="soon">Coming soon</span></a>
+        <a class="btn btn-secondary" href="https://github.com/svichas/ReqTune/releases/latest"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Download latest release</a>
+        <a class="btn btn-quiet" href="https://github.com/svichas/ReqTune"><svg class="i" aria-hidden="true"><use href="#i-github"/></svg>View source</a>
+      </div>
+      <p class="meta">Chrome&nbsp;116 or&nbsp;later · Manifest&nbsp;V3 · No&nbsp;data&nbsp;collected</p>
+    </div>
+    <div class="shot">
+      <picture>
+        <source srcset="panel-dark.png" media="(prefers-color-scheme: dark)">
+        <img src="panel-light.png" width="360" height="540" fetchpriority="high" alt="The ReqTune side panel. A Staging API group sends Authorization and X-Env headers to *.staging.example.com/api/* and localhost:3000; two more groups sit below it, one switched off.">
+      </picture>
+      <div class="req" role="img" aria-label="Example: a GET request to app.staging.example.com/api/orders gets the Authorization and X-Env headers from the Staging API group.">
+        <div class="req-url"><span class="method">GET</span>app.staging.example.com/api/orders</div>
+        <div class="req-h">Accept: application/json</div>
+        <div class="req-h add">+ Authorization: Bearer ••••••••</div>
+        <div class="req-h add">+ X-Env: staging</div>
+        <div class="req-note"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>2 headers set by Staging API</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <p class="kicker">Features</p>
+      <h2 id="features-title">Built for everyday web development</h2>
+      <p class="sub">Point a frontend at staging, send a token to localhost, flip a feature flag or turn on debug tracing, without a proxy or a rebuild.</p>
+      <ul class="features">
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg></span><h3>Groups</h3><p>Pair URL patterns with the headers to send, and switch each group on or off.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-asterisk"/></svg></span><h3>Wildcard patterns</h3><p><code>*.example.com/api/*</code>, <code>localhost:3000</code>, <code>/graphql</code> and more.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg></span><h3>Instant and native</h3><p>Changes apply as you type. Chrome sets the headers itself, with no JavaScript in the request path.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-window"/></svg></span><h3>URL patterns or tabs</h3><p>Target URLs, or send a group's headers on every request from the tabs you pick.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-sort"/></svg></span><h3>Priority you control</h3><p>When groups set the same header, the one higher in the list wins.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg></span><h3>Screen-share safe</h3><p><code>Authorization</code>, <code>Cookie</code> and other token-like values show as dots until you reveal them.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-keyboard"/></svg></span><h3>Comfortable editing</h3><p>Header name suggestions, duplicate groups, undo deletes, and Enter to add a row.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-sidebar"/></svg></span><h3>Side panel or full page</h3><p>The panel stays open while you browse. Open a full page when long tokens need more room.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><h3>Private</h3><p>Everything stays in local extension storage. ReqTune makes no network requests and collects nothing.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="patterns" aria-labelledby="patterns-title">
+    <div class="wrap split">
+      <div>
+        <p class="kicker">Patterns</p>
+        <h2 id="patterns-title">Patterns that read like URLs</h2>
+        <p class="sub"><code>[scheme://]host[:port][/path]</code>, where <code>*</code> matches any characters.</p>
+        <ul class="notes">
+          <li>In the host, <code>*</code> never crosses a <code>/</code>, so <code>example.com</code> can't match <code>example.com.evil.com</code>.</li>
+          <li>No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains <code>?</code>.</li>
+          <li>Leave out default ports (<code>:80</code>, <code>:443</code>). Chrome removes them from URLs, so they never match.</li>
+        </ul>
+      </div>
+      <div class="card table">
+        <table>
+          <thead><tr><th scope="col">Pattern</th><th scope="col">Matches</th></tr></thead>
+          <tbody>
+            <tr><td><code>example.com</code></td><td>Every URL on example.com, on any scheme, port and path</td></tr>
+            <tr><td><code>*.example.com</code></td><td>example.com and all of its subdomains</td></tr>
+            <tr><td><code>api.example.com/v1/*</code></td><td>Everything under <code>/v1/</code> on that host</td></tr>
+            <tr><td><code>localhost:3000</code></td><td>Only port 3000</td></tr>
+            <tr><td><code>https://example.com/*</code></td><td>HTTPS requests only</td></tr>
+            <tr><td><code>/graphql</code></td><td>That path on any host</td></tr>
+            <tr><td><code>example.com/search?q=*</code></td><td>Paths whose query string matches too</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="how-it-works" aria-labelledby="how-title">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <h2 id="how-title">Chrome does the heavy lifting</h2>
+      <p class="sub">ReqTune turns your groups into <code>declarativeNetRequest</code> rules, so Chrome itself sets the headers. No proxy, no content scripts, no JavaScript in the request path.</p>
+      <ol class="flow">
+        <li class="card"><b>Side panel</b><span>You edit groups, in React and Mantine</span></li>
+        <li class="card"><b><code>chrome.storage<wbr>.local</code></b><span>Groups are saved on your device</span></li>
+        <li class="card"><b>Service worker</b><span>Turns each pattern into a rule</span></li>
+        <li class="card"><b><code>declarative<wbr>NetRequest</code></b><span><code>modifyHeaders</code> rules, swapped atomically</span></li>
+        <li class="card"><b>Matching requests</b><span>Chrome sets your headers</span></li>
+      </ol>
+      <dl class="facts">
+        <div><dt>Compiled, not interpreted</dt><dd>Each URL pattern compiles to an anchored regex in its own rule, and group order becomes rule priority.</dd></div>
+        <div><dt>Atomic updates</dt><dd>Rule sets are swapped in one step, so edits never leave them half-applied. Rules cover every resource type, page navigations included.</dd></div>
+        <div><dt>Tabs, too</dt><dd>A group that targets tabs becomes a session rule with a <code>tabIds</code> condition and no URL filter. Tab picks last until Chrome restarts.</dd></div>
+      </dl>
+      <a class="more" href="https://github.com/svichas/ReqTune/blob/main/src/background/rules.ts">Read the rule builder <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+  </section>
+
+  <section class="section" id="open-source" aria-labelledby="oss-title">
+    <div class="wrap split oss">
+      <div>
+        <p class="kicker">Open source</p>
+        <h2 id="oss-title">Free, open source and private</h2>
+        <p class="sub">ReqTune is MIT licensed and built in the open. It has no account, no server and no analytics, so nothing you enter ever leaves your device.</p>
+        <ul class="checks">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>MIT licensed: use it, fork it, change it.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>No network requests, no analytics, nothing collected.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Every permission <a href="https://github.com/svichas/ReqTune#permissions">explained in the README</a>.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Unit tests for pattern matching and rule building.</span></li>
+        </ul>
+        <div class="ctas">
+          <a class="btn btn-secondary" href="https://github.com/svichas/ReqTune"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg>Star on GitHub</a>
+          <a class="btn btn-quiet" href="https://github.com/svichas/ReqTune/blob/main/PRIVACY.md">Privacy policy</a>
+        </div>
+      </div>
+      <div class="links">
+        <a class="card link-card" href="https://github.com/svichas/ReqTune">
+          <span class="icon"><svg class="i" aria-hidden="true"><use href="#i-code"/></svg></span>
+          <span><span class="t">Read the source</span><span class="d">TypeScript, React and Mantine, bundled with Vite and tested with Vitest.</span></span>
+          <svg class="i go" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="card link-card" href="https://github.com/svichas/ReqTune/issues/new">
+          <span class="icon"><svg class="i" aria-hidden="true"><use href="#i-bug"/></svg></span>
+          <span><span class="t">Report an issue</span><span class="d">A pattern that doesn't match, or a header that isn't set? Open an issue with the steps to reproduce it.</span></span>
+          <svg class="i go" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="card link-card" href="https://github.com/svichas/ReqTune#development">
+          <span class="icon"><svg class="i" aria-hidden="true"><use href="#i-pr"/></svg></span>
+          <span><span class="t">Contribute</span><span class="d">Run <code>npm run dev</code>, load <code>dist/</code> unpacked, and send a pull request.</span></span>
+          <svg class="i go" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <p class="kicker">Install</p>
+      <h2 id="install-title">Add ReqTune to Chrome</h2>
+      <p class="sub">Works in Chrome 116 or later.</p>
+      <div class="install">
+        <div class="card store-card">
+          <div>
+            <h3><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg></span>Chrome Web Store</h3>
+            <p>One-click install, with automatic updates from Chrome.</p>
+          </div>
+          <a class="btn btn-primary store"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome <span class="soon">Coming soon</span></a>
+        </div>
+        <div class="card">
+          <h3><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg></span>From a release</h3>
+          <ol class="steps">
+            <li>Download the zip from the latest release and unzip it.</li>
+            <li>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>.</li>
+            <li>Click <strong>Load unpacked</strong> and pick the unzipped folder.</li>
+          </ol>
+          <a class="btn btn-secondary" href="https://github.com/svichas/ReqTune/releases/latest"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Download latest release</a>
+        </div>
+        <div class="card">
+          <h3><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-code"/></svg></span>From source</h3>
+          <p>Needs Node.js 22.12 or later.</p>
+          <pre><code>git clone https://github.com/svichas/ReqTune.git
+cd ReqTune
+npm install
+npm run build</code></pre>
+          <p>Then load the <code>dist/</code> folder the same way.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <a class="brand" href="./" aria-label="ReqTune home"><svg width="100" height="24" aria-hidden="true"><use href="#logo"/></svg></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/svichas/ReqTune">GitHub</a>
+        <a href="https://github.com/svichas/ReqTune/releases">Releases</a>
+        <a href="https://github.com/svichas/ReqTune/issues">Issues</a>
+        <a href="https://github.com/svichas/ReqTune/blob/main/PRIVACY.md">Privacy policy</a>
+      </nav>
+    </div>
+    <p class="fine"><a href="https://github.com/svichas/ReqTune/blob/main/LICENSE">MIT License</a> © 2026 Stefanos Vichas. Chrome is a trademark of Google LLC, and ReqTune is not affiliated with Google.</p>
+  </div>
+</footer>
+</body>
+</html>
