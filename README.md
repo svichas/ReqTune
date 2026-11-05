@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://svichas.github.io/ReqTune/">svichas.github.io/ReqTune</a>
+  <a href="https://chromewebstore.google.com/detail/reqtune/mbfeljmpmenkffmmmpakpfmfbohgbcmm">Chrome Web Store</a> · <a href="https://svichas.github.io/ReqTune/">svichas.github.io/ReqTune</a>
 </p>
 
 <p align="center">
@@ -33,7 +33,9 @@
 
 ## Install
 
-ReqTune isn't on the Chrome Web Store yet. You need Chrome 116+.
+You need Chrome 116+.
+
+**From the Chrome Web Store:** [add ReqTune to Chrome](https://chromewebstore.google.com/detail/reqtune/mbfeljmpmenkffmmmpakpfmfbohgbcmm). Chrome keeps it up to date.
 
 **From a release:** download the zip from the [latest release](https://github.com/svichas/ReqTune/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick the unzipped folder.
 
