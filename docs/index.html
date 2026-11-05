@@ -92,15 +92,11 @@
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: 6px; font: 600 0.9375rem/1.2 var(--sans); text-decoration: none; }
   .btn .i { width: 18px; height: 18px; }
   .btn-primary { background: var(--fill); color: #fff; }
-  .btn-primary[href]:hover { background: var(--fill-hover); }
+  .btn-primary:hover { background: var(--fill-hover); }
   .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
   .btn-secondary:hover { background: var(--hover); }
   .btn-quiet { padding-inline: 10px; color: var(--link); }
   .btn-quiet:hover { text-decoration: underline; }
-  /* A .store link without an href is a placeholder until the Chrome Web Store listing is live. */
-  .store:not([href]) { cursor: default; }
-  .store[href] .soon { display: none; }
-  .soon { padding: 3px 6px; border-radius: 4px; background: rgb(0 0 0 / 0.22); font-size: 0.75rem; }
 
   /* Hero */
   .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 64px; padding-block: 40px 112px; }
@@ -268,8 +264,7 @@
       <h1 id="hero-title">Set request headers on the URLs you choose.</h1>
       <p class="lead">Pair wildcard URL patterns with the headers to send, in groups you switch on and off from Chrome's side panel. Chrome applies them natively, and nothing leaves your device.</p>
       <div class="ctas">
-        <!-- Chrome Web Store: once the listing is approved, add href="<listing URL>" to both .store links. Their "Coming soon" labels then hide themselves. -->
-        <a class="btn btn-primary store"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome <span class="soon">Coming soon</span></a>
+        <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/reqtune/mbfeljmpmenkffmmmpakpfmfbohgbcmm"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome</a>
         <a class="btn btn-secondary" href="https://github.com/svichas/ReqTune/releases/latest"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Download latest release</a>
         <a class="btn btn-quiet" href="https://github.com/svichas/ReqTune"><svg class="i" aria-hidden="true"><use href="#i-github"/></svg>View source</a>
       </div>
@@ -407,7 +402,7 @@
             <h3><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg></span>Chrome Web Store</h3>
             <p>One-click install, with automatic updates from Chrome.</p>
           </div>
-          <a class="btn btn-primary store"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome <span class="soon">Coming soon</span></a>
+          <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/reqtune/mbfeljmpmenkffmmmpakpfmfbohgbcmm"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome</a>
         </div>
         <div class="card">
           <h3><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg></span>From a release</h3>
