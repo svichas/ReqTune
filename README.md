@@ -64,7 +64,7 @@ The **Tabs** picker shows a small search field when more than 10 tabs are availa
 
 A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
-To back up or share groups, pick **Export all groups** from the ⋮ menu at the top, or **Export** from a group's ⋯ menu, and Chrome downloads `reqtune-groups.json` (or `reqtune-<group-name>.json`). If any header looks like a credential (those whose values show as dots), ReqTune first asks whether to include their values; left out, they're saved empty. **Import groups…** in the same ⋮ menu adds the groups from such a file after yours, so yours keep priority. Tab picks aren't exported: a group that targets tabs comes in with none picked.
+To back up or share groups, pick **Export all groups** from the ⋮ menu at the top, or **Export** from a group's ⋯ menu, and Chrome downloads `reqtune-groups.json` (or `reqtune-<group-name>.json`). If any header looks like a credential (those whose values show as dots), ReqTune first asks whether to include their values; left out, they're saved empty and their groups switched off, so an import never replaces someone's real cookie or token with a blank one. **Import groups…** in the same ⋮ menu adds the groups from such a file after yours, so yours keep priority. Tab picks aren't exported: a group that targets tabs comes in with none picked.
 
 ## Pattern syntax
 

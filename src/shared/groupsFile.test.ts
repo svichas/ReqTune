@@ -31,7 +31,7 @@ const valid = { name: 'G', enabled: true, patterns: ['a.com'], headers: [{ name:
 describe('serializeGroups', () => {
   it('writes pretty-printed JSON of the known fields only: no ids, tab picks or leftovers', () => {
     const legacy = { ...groups[1], limitToTabs: true } as Group;
-    const text = serializeGroups([legacy]);
+    const text = serializeGroups([legacy], () => false);
     expect(text).toMatch(/^{\n {2}"reqtune": 1,\n {2}"groups": \[\n/);
     expect(JSON.parse(text)).toEqual({
       reqtune: 1,
@@ -45,13 +45,20 @@ describe('serializeGroups', () => {
       { name: ' Authorization ', value: '' },
       { name: 'X-Debug', value: '1' },
     ]);
-    expect(serializeGroups(groups)).toContain('Bearer secret');
+    expect(serializeGroups(groups, () => false)).toContain('Bearer secret');
+  });
+
+  it('saves a group switched off once it loses a value, and only then', () => {
+    const blank = { ...groups[0], headers: [{ name: 'Authorization', value: '' }] };
+    const [lost, kept] = JSON.parse(serializeGroups([groups[0], blank], isSecretHeader)).groups;
+    expect(lost.enabled).toBe(false);
+    expect(kept.enabled).toBe(true);
   });
 });
 
 describe('parseGroupsFile', () => {
   it('reads back what serializeGroups wrote, with fresh ids', async () => {
-    const imported = await parseGroupsFile(file(serializeGroups(groups)));
+    const imported = await parseGroupsFile(file(serializeGroups(groups, () => false)));
     expect(withoutIds(imported)).toEqual(withoutIds(groups));
     const ids = imported.map((g) => g.id);
     expect(new Set(ids).size).toBe(2);
@@ -98,6 +105,7 @@ describe('groupFileName', () => {
     ['Staging API', 'reqtune-staging-api.json'],
     [' a/b: c* ', 'reqtune-a-b-c.json'],
     ['Δοκιμή 2', 'reqtune-δοκιμή-2.json'],
+    ['परीक्षण API', 'reqtune-परीक्षण-api.json'],
     ['', 'reqtune-group.json'],
     ['***', 'reqtune-group.json'],
   ])('%j -> %s', (name, fileName) => expect(groupFileName(name)).toBe(fileName));

@@ -14,7 +14,7 @@ export const hasSecretValues = (groups: Group[]): boolean =>
 
 /** Saves the file through a link to it, which needs no downloads permission. Secret values stay out by default. */
 export function downloadGroups({ groups, fileName }: PendingExport, withSecrets = false): void {
-  const text = serializeGroups(groups, withSecrets ? undefined : isSecretHeader);
+  const text = serializeGroups(groups, withSecrets ? () => false : isSecretHeader);
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
@@ -39,8 +39,8 @@ export function ExportDialog({ pending, onClose }: Props) {
   return (
     <Modal opened={pending !== undefined} onClose={onClose} centered size="sm" title="Include secret values?">
       <Text size="sm">
-        Some header values look like credentials. Left out, they export empty; included, anyone with the file can read
-        them.
+        Some header values look like credentials. Left out, they export empty, with their groups switched off; included,
+        anyone with the file can read them.
       </Text>
       <Flex justify="flex-end" gap="sm" mt="lg">
         <Button variant="default" onClick={() => save(true)}>

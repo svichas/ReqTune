@@ -6,14 +6,15 @@ const MAX_BYTES = 1024 * 1024;
 /**
  * Groups as the file Export saves: pretty-printed `{ "reqtune": 1, "groups": [...] }`. Ids stay out, since import
  * gives every group a new one, and so do tab picks, which only last a session. Values of headers `isSecret` matches
- * are left empty.
+ * are left empty, and a group that loses one is saved switched off.
  */
-export function serializeGroups(groups: Group[], isSecret: (name: string) => boolean = () => false): string {
+export function serializeGroups(groups: Group[], isSecret: (name: string) => boolean): string {
   const file = {
     reqtune: VERSION,
     groups: groups.map(({ name, enabled, patterns, headers, target }) => ({
       name,
-      enabled,
+      // Chrome would still set the emptied value, in place of the importer's own cookie or token.
+      enabled: enabled && !headers.some((h) => h.value !== '' && isSecret(h.name.trim())),
       patterns,
       headers: headers.map((h) => ({ name: h.name, value: isSecret(h.name.trim()) ? '' : h.value })),
       target,
@@ -22,9 +23,12 @@ export function serializeGroups(groups: Group[], isSecret: (name: string) => boo
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
-/** `reqtune-<group-name>.json`, the name cut down to lowercase letters, digits and dashes. */
+/**
+ * `reqtune-<group-name>.json`, the name cut down to lowercase letters, digits and dashes. Letters keep their marks
+ * (accents, vowel signs), or 'परीक्षण' would come apart.
+ */
 export const groupFileName = (name: string): string =>
-  `reqtune-${name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'group'}.json`;
+  `reqtune-${name.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'group'}.json`;
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
