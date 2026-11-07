@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
-import { getPaused, watchKey } from '../../shared/storage';
+import { getPaused, setPaused as savePaused, watchKey } from '../../shared/storage';
 
 /** Whether every group is paused at once, kept in step with the shortcut and every other open page. */
-export function usePaused(): boolean {
-  const [paused, setPaused] = useState(false);
+export function usePaused() {
+  const [paused, setPausedState] = useState(false);
 
   useEffect(() => {
-    const unwatch = watchKey('local', 'paused', (stored) => setPaused(stored === true));
-    void getPaused().then(setPaused);
+    const unwatch = watchKey('local', 'paused', (stored) => setPausedState(stored === true));
+    void getPaused().then(setPausedState);
     return unwatch;
   }, []);
 
-  return paused;
+  const setPaused = (next: boolean) => {
+    setPausedState(next);
+    void savePaused(next);
+  };
+
+  return [paused, setPaused] as const;
 }
