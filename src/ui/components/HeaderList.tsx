@@ -2,10 +2,11 @@ import { type KeyboardEvent, useState } from 'react';
 import { ActionIcon, Autocomplete, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
+import { canAppendRequestHeader, isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
 import { COMMON_HEADERS, isSecretHeader } from '../headers';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
+import { OperationMenu } from './OperationMenu';
 
 interface Props {
   headers: HeaderEntry[];
@@ -15,6 +16,15 @@ interface Props {
 
 const inputClassNames = { input: classes.input, error: classes.error };
 const nameClassNames = { ...inputClassNames, option: classes.option };
+
+// Remove sends no value, so its row hides the value field (keeping what was typed, for switching back).
+const hasValue = (header: HeaderEntry) => header.operation !== 'remove';
+
+const nameError = (name: string, operation: HeaderEntry['operation']) => {
+  if (name === '') return;
+  if (!isValidHeaderName(name)) return 'Use letters, digits and - only';
+  if (operation === 'append' && !canAppendRequestHeader(name)) return "Chrome can't append to this header";
+};
 
 export function HeaderList({ headers, required, onChange }: Props) {
   const { ref, focus, focusAfterRender } = useFocusAfterRender();
@@ -27,9 +37,10 @@ export function HeaderList({ headers, required, onChange }: Props) {
     focusAfterRender(`name${i}`);
     onChange([...headers.slice(0, i), { name: '', value: '' }, ...headers.slice(i)]);
   };
-  // Focus moves to the previous row's value (the first row's name when removing the top row), or to "Add".
+  // Focus moves to the end of the previous row (the first row's name when removing the top row), or to "Add".
   const remove = (i: number) => {
-    focusAfterRender(headers.length === 1 ? 'add' : i > 0 ? `value${i - 1}` : 'name0', true);
+    const lastInput = (j: number) => `${hasValue(headers[j]) ? 'value' : 'name'}${j}`;
+    focusAfterRender(headers.length === 1 ? 'add' : i > 0 ? lastInput(i - 1) : 'name0', true);
     onChange(headers.filter((_, j) => j !== i));
   };
   // Enter walks name -> value -> new row; Backspace in an empty row removes it (never the last one).
@@ -38,9 +49,14 @@ export function HeaderList({ headers, required, onChange }: Props) {
     if (e.key === 'Enter') {
       // A highlighted suggestion owns this Enter; picking it moves on to the value via onOptionSubmit.
       if (e.currentTarget.getAttribute('aria-activedescendant')) return;
-      if (field === 'name') focus(`value${i}`);
+      if (field === 'name' && hasValue(headers[i])) focus(`value${i}`);
       else insert(i + 1);
-    } else if (e.key === 'Backspace' && headers[i].name === '' && headers[i].value === '' && headers.length > 1) {
+    } else if (
+      e.key === 'Backspace' &&
+      headers[i].name === '' &&
+      (headers[i].value === '' || !hasValue(headers[i])) &&
+      headers.length > 1
+    ) {
       e.preventDefault();
       remove(i);
     }
@@ -60,6 +76,11 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const shown = revealed[i] === header.name;
         return (
           <div key={i} className={classes.row}>
+            <OperationMenu
+              index={i}
+              operation={header.operation ?? 'set'}
+              onChange={(operation) => update(i, { operation })}
+            />
             <Autocomplete
               ref={ref(`name${i}`)}
               variant="unstyled"
@@ -73,7 +94,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
               limit={8}
               openOnFocus={false}
               value={header.name}
-              error={name !== '' && !isValidHeaderName(name) ? 'Use letters, digits and - only' : undefined}
+              error={nameError(name, header.operation)}
               onChange={(value) => update(i, { name: value })}
               onOptionSubmit={() => focus(`value${i}`)}
               onKeyDown={onKeyDown(i, 'name')}
@@ -82,6 +103,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
               ref={ref(`value${i}`)}
               variant="unstyled"
               className={classes.value}
+              display={hasValue(header) ? undefined : 'none'}
               classNames={inputClassNames}
               aria-label={`Header ${i + 1} value`}
               placeholder="value"

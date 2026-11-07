@@ -1,7 +1,10 @@
-/** A request header set on every request its group matches. */
+/** A request header changed on every request its group matches. */
 export interface HeaderEntry {
   name: string;
+  /** Kept for a Remove too, though not sent, so switching back restores it. */
   value: string;
+  /** Replace the header (the default), add the value to it, or drop it. */
+  operation?: 'set' | 'append' | 'remove';
 }
 
 /** URL patterns plus the headers applied to requests matching any of them. */

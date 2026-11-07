@@ -25,6 +25,7 @@
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
+- **Set, append or remove** — replace a header (the default), add your value to the one the browser sends, or strip the header from requests.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
@@ -58,6 +59,8 @@ Then load the `dist/` folder the same way.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
+
+The button at the start of each header row picks what happens to that header: **Set** (`=`, the default) replaces it, **Append** (`+`) adds your value to the one the browser sends, and **Remove** (`−`) strips it from requests, so the row needs no value. Chrome only appends to a fixed list of standard headers, such as `Accept`, `Accept-Language`, `Cookie`, `User-Agent` and `X-Forwarded-For`; on any other, the row shows an error and isn't sent. Appends add up: one from a group lower in the list still adds to a header that a group above it sets.
 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 
