@@ -37,8 +37,10 @@ export function HeaderList({ headers, required, onChange }: Props) {
   const onKeyDown = (i: number, field: 'name' | 'value') => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
-      // A highlighted suggestion owns this Enter; picking it moves on to the value via onOptionSubmit.
-      if (e.currentTarget.getAttribute('aria-activedescendant')) return;
+      // A highlighted suggestion owns this Enter; picking a name moves on to the value via onOptionSubmit. Mantine
+      // leaves aria-activedescendant on the last option arrowed to after the highlight is gone, so check the option.
+      const active = e.currentTarget.getAttribute('aria-activedescendant');
+      if (active && document.getElementById(active)?.hasAttribute('data-combobox-selected')) return;
       if (field === 'name') focus(`value${i}`);
       else insert(i + 1);
     } else if (e.key === 'Backspace' && headers[i].name === '' && headers[i].value === '' && headers.length > 1) {
@@ -61,7 +63,18 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const shown = revealed[i] === header.name;
         const presets = valuePresets(name);
         const presetLabel = (value: string) => presets.find((preset) => preset.value === value)?.label ?? '';
-        const valueError = isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks";
+        const valueProps = {
+          ref: ref(`value${i}`),
+          variant: 'unstyled',
+          className: classes.value,
+          'aria-label': `Header ${i + 1} value`,
+          placeholder: 'value',
+          autoComplete: 'off',
+          spellCheck: false,
+          value: header.value,
+          error: isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks",
+          onKeyDown: onKeyDown(i, 'value'),
+        };
         return (
           <div key={i} className={classes.row}>
             <Autocomplete
@@ -85,39 +98,25 @@ export function HeaderList({ headers, required, onChange }: Props) {
             />
             {presets.length ? (
               <Autocomplete
-                ref={ref(`value${i}`)}
-                variant="unstyled"
-                className={classes.value}
+                {...valueProps}
                 classNames={presetClassNames}
-                aria-label={`Header ${i + 1} value`}
-                placeholder="value"
-                autoComplete="off"
-                spellCheck={false}
                 // The options are the values, so picking one fills it in; the list shows and matches their labels.
                 data={presets.map((preset) => preset.value)}
                 renderOption={({ option }) => presetLabel(option.value)}
                 filter={({ options, search }) => {
+                  // A picked preset lists them all, so switching to another doesn't mean clearing the field first.
+                  if (presets.some((preset) => preset.value === search)) return options;
                   const query = search.trim().toLowerCase();
                   return options.filter((option) => 'value' in option && presetLabel(option.value).toLowerCase().includes(query));
                 }}
                 // Mantine's default scroll area would cut off the last presets.
                 withScrollArea={false}
-                value={header.value}
-                error={valueError}
                 onChange={(value) => update(i, { value })}
-                onKeyDown={onKeyDown(i, 'value')}
               />
             ) : (
               <TextInput
-                ref={ref(`value${i}`)}
-                variant="unstyled"
-                className={classes.value}
+                {...valueProps}
                 classNames={inputClassNames}
-                aria-label={`Header ${i + 1} value`}
-                placeholder="value"
-                autoComplete="off"
-                spellCheck={false}
-                value={header.value}
                 data-masked={(secret && !shown) || undefined}
                 rightSectionWidth={32}
                 rightSectionPointerEvents="all"
@@ -134,9 +133,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
                     </Tooltip>
                   ) : undefined
                 }
-                error={valueError}
                 onChange={(e) => update(i, { value: e.currentTarget.value })}
-                onKeyDown={onKeyDown(i, 'value')}
               />
             )}
             <RemoveButton label={`Remove header ${i + 1}`} onClick={() => remove(i)} />

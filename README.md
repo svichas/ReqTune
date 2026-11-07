@@ -28,7 +28,7 @@
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
-- **User-Agent presets** — a `User-Agent` row's value field suggests current Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
+- **User-Agent presets** — a `User-Agent` row's value field suggests common Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
 - **Side panel or full page** — the panel stays open while you browse; open it as a full page when long tokens need more room, and edits stay in sync between the two. Light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
