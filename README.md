@@ -28,6 +28,7 @@
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
+- **Export and import** — save groups to a JSON file to back them up or hand them to a teammate, and import them on any machine. Secret values stay out of the file unless you choose to include them.
 - **Side panel or full page** — the panel stays open while you browse; open it as a full page when long tokens need more room, and edits stay in sync between the two. Light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
@@ -62,6 +63,8 @@ Need more room? **Open in full page** at the bottom of the panel shows the same 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 
 A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
+
+To back up or share groups, pick **Export all groups** from the ⋮ menu at the top, or **Export** from a group's ⋯ menu, and Chrome downloads `reqtune-groups.json` (or `reqtune-<group-name>.json`). If any header looks like a credential (those whose values show as dots), ReqTune first asks whether to include their values; left out, they're saved empty. **Import groups…** in the same ⋮ menu adds the groups from such a file after yours, so yours keep priority. Tab picks aren't exported: a group that targets tabs comes in with none picked.
 
 ## Pattern syntax
 

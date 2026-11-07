@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Alert, Box, Button, UnstyledButton } from '@mantine/core';
 import { IconAlertTriangle, IconExternalLink, IconPlus } from '@tabler/icons-react';
+import { groupFileName } from '../shared/groupsFile';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
 import { EmptyState } from './components/EmptyState';
+import { ExportDialog, type PendingExport, downloadGroups, hasSecretValues } from './components/ExportDialog';
 import { type FocusTarget, GroupCard } from './components/GroupCard';
 import { HelpPopover } from './components/HelpPopover';
+import { ImportExportMenu } from './components/ImportExportMenu';
 import { type Deleted, UndoBar } from './components/UndoBar';
 import { isFullPage, openFullPage } from './fullPage';
 import { useGroups } from './hooks/useGroups';
@@ -18,6 +21,7 @@ export function App() {
   const syncError = useSyncError();
   const [focus, setFocus] = useState<{ id: string; target: FocusTarget }>();
   const [deleted, setDeleted] = useState<Deleted>();
+  const [exporting, setExporting] = useState<PendingExport>();
 
   const insertAt = (index: number, group: Group, target: FocusTarget) => {
     setFocus({ id: group.id, target });
@@ -51,6 +55,8 @@ export function App() {
     setDeleted(undefined);
     insertAt(deleted.index, deleted.group, 'actions');
   };
+  const exportGroups = (pending: PendingExport) =>
+    hasSecretValues(pending.groups) ? setExporting(pending) : downloadGroups(pending);
 
   return (
     <div className={classes.app}>
@@ -62,6 +68,12 @@ export function App() {
           </h1>
         )}
         <HelpPopover />
+        <ImportExportMenu
+          canImport={!loading}
+          canExport={groups.length > 0}
+          onExport={() => exportGroups({ groups, fileName: 'reqtune-groups.json' })}
+          onImport={(imported) => setGroups([...groups, ...imported])}
+        />
         {/* Disabled while loading: adding then would overwrite the stored groups with just the new one. */}
         <Button size="compact-sm" variant="light" leftSection={<IconPlus size={14} />} disabled={loading} onClick={addGroup}>
           New group
@@ -97,6 +109,7 @@ export function App() {
               onChange={(next) => setGroups(groups.map((g, j) => (j === i ? next : g)))}
               onTabIdsChange={(tabIds) => setTabSelections({ ...tabSelections, [group.id]: tabIds })}
               onDuplicate={() => duplicate(i)}
+              onExport={() => exportGroups({ groups: [group], fileName: groupFileName(group.name) })}
               onMove={(delta) => move(i, delta)}
               onDelete={(viaKeyboard) => remove(i, viaKeyboard)}
             />
@@ -115,6 +128,7 @@ export function App() {
       )}
 
       <UndoBar deleted={deleted} onUndo={undo} onDismiss={() => setDeleted(undefined)} />
+      <ExportDialog pending={exporting} onClose={() => setExporting(undefined)} />
     </div>
   );
 }
