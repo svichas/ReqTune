@@ -61,16 +61,18 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const on = header.enabled !== false;
         return (
           <div key={i} className={classes.row} data-off={!on || undefined}>
-            <Checkbox.Card
-              className={classes.toggle}
-              radius={0}
-              withBorder={false}
-              aria-label={`Send header ${i + 1}`}
-              checked={on}
-              onChange={(enabled) => update(i, { enabled })}
-            >
-              <Checkbox.Indicator size="xs" />
-            </Checkbox.Card>
+            <Tooltip label="Send header">
+              <Checkbox.Card
+                className={classes.toggle}
+                radius={0}
+                withBorder={false}
+                aria-label={`Send header ${i + 1}`}
+                checked={on}
+                onChange={(enabled) => update(i, { enabled })}
+              >
+                <Checkbox.Indicator size="xs" />
+              </Checkbox.Card>
+            </Tooltip>
             <Autocomplete
               ref={ref(`name${i}`)}
               variant="unstyled"

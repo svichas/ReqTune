@@ -132,6 +132,11 @@ button.toggle {
   height: 2rem;
 }
 
+/* Keep an unticked box visible on the dark row fills; Mantine borders it in dark.4, the colour of a hovered row. */
+:root[data-mantine-color-scheme='dark'] .toggle > :not([data-checked]) {
+  border-color: var(--mantine-color-dark-3);
+}
+
 /* Headers that are off recede like off groups; the box stays crisp so turning one back on is obvious. */
 .row[data-off] :is(.name, .value) {
   opacity: 0.6;
