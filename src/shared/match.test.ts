@@ -41,8 +41,6 @@ describe('matchGroups', () => {
 
   it('marks the header that wins when several set it: the first in list order, names compared case-insensitively', () => {
     const groups = [
-      // Applies only in its picked tabs, so it never decides the winner for the URL.
-      group('tabs', [], [['X-Token', 'tab']], { target: 'tabs' }),
       group('a', ['example.com'], [['X-Token', 'a'], ['X-A', '1']]),
       group('b', ['/api/*'], [['x-token', 'b'], ['X-B', '2'], ['X-B', '3']]),
     ];
@@ -54,6 +52,37 @@ describe('matchGroups', () => {
         { name: 'X-B', value: '3', wins: false },
       ],
     ]);
+  });
+
+  it('lets a tabs group above a URL group win in its picked tabs, and the URL group everywhere else', () => {
+    const groups = [
+      group('tabs', [], [['X-Env', 'tab']], { target: 'tabs' }),
+      group('a', ['example.com'], [['X-Env', 'a']]),
+      group('b', ['/api/*'], [['x-env', 'b']]),
+    ];
+    expect(matchGroups(groups, 'https://example.com/api/x')).toEqual({
+      byPattern: [
+        { group: groups[1], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', overriddenInTabs: true }] },
+        { group: groups[2], pattern: '/api/*', headers: [{ name: 'x-env', value: 'b', wins: false }] },
+      ],
+      byTabs: [{ group: groups[0], headers: [{ name: 'X-Env', value: 'tab', wins: true }] }],
+    });
+  });
+
+  it('lets a URL group above a tabs group win in its picked tabs too', () => {
+    const groups = [
+      group('a', ['example.com'], [['X-Env', 'a']]),
+      group('tabs', [], [['x-env', 'tab'], ['X-Tab', '1']], { target: 'tabs' }),
+      // Tabs groups only meet in tabs both picked, so neither X-Tab gets a mark.
+      group('more-tabs', [], [['X-Tab', '2']], { target: 'tabs' }),
+    ];
+    expect(matchGroups(groups, 'https://example.com/')).toEqual({
+      byPattern: [{ group: groups[0], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', wins: true }] }],
+      byTabs: [
+        { group: groups[1], headers: [{ name: 'x-env', value: 'tab', wins: false }, { name: 'X-Tab', value: '1' }] },
+        { group: groups[2], headers: [{ name: 'X-Tab', value: '2' }] },
+      ],
+    });
   });
 
   it('lists groups that target tabs apart, whatever the URL and their patterns', () => {

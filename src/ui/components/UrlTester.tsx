@@ -28,10 +28,11 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
     inputRef.current?.select();
   }, []);
 
-  const result = url.trim() ? matchGroups(groups, url) : undefined;
   // Like the cards' counts: a picked tab that has since closed makes no more requests.
   const pickedTabs = (group: Group) => tabs.filter((tab) => tabSelections[group.id]?.includes(tab.id)).length;
-  const byTabs = result?.byTabs.filter(({ group }) => pickedTabs(group) > 0) ?? [];
+  const result = url.trim()
+    ? matchGroups(groups.filter((group) => group.target !== 'tabs' || pickedTabs(group) > 0), url)
+    : undefined;
 
   let status = 'Enter a URL to see which groups would change its requests.';
   if (result === null) status = 'Enter a full URL, like https://example.com/api';
@@ -73,13 +74,13 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
         </ul>
       )}
 
-      {byTabs.length > 0 && (
+      {!!result?.byTabs.length && (
         <>
           <Text size="xs" fw={500} c="dimmed" px={2} mt={6}>
             In picked tabs, whatever the URL
           </Text>
           <ul aria-label="Groups that target tabs" className={classes.list}>
-            {byTabs.map(({ group, headers }) => (
+            {result.byTabs.map(({ group, headers }) => (
               <Match key={group.id} group={group} headers={headers}>
                 <Text span size="xs" c="dimmed">
                   {count(pickedTabs(group), 'tab')}
@@ -104,7 +105,7 @@ function Match({ group, headers, children }: GroupMatch & { children: ReactNode 
         {children}
       </div>
       <dl className={classes.headers}>
-        {headers.map(({ name, value, wins }, i) => (
+        {headers.map(({ name, value, wins, overriddenInTabs }, i) => (
           <div key={i} className={classes.header} data-overridden={wins === false || undefined}>
             <dt>{name}</dt>
             <dd>
@@ -123,6 +124,11 @@ function Match({ group, headers, children }: GroupMatch & { children: ReactNode 
               {wins === false && (
                 <Text span size="xs" ff="text">
                   overridden
+                </Text>
+              )}
+              {overriddenInTabs && (
+                <Text span size="xs" ff="text" c="dimmed">
+                  overridden in picked tabs
                 </Text>
               )}
             </dd>

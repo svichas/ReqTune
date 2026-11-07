@@ -64,7 +64,7 @@ The **Tabs** picker shows a small search field when more than 10 tabs are availa
 
 A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
-To check what a request would get, click **Test a URL** (the globe icon at the top) and type or paste a full URL; in the side panel it starts with the page you're on. It lists every enabled group whose patterns match, the pattern that matched and the headers it would set, and marks which one wins when groups set the same header. Groups that target tabs are listed apart, since they apply in their picked tabs whatever the URL.
+To check what a request would get, click **Test a URL** (the globe icon at the top) and type or paste a full URL; in the side panel it starts with the page you're on. It lists every enabled group whose patterns match, the pattern that matched and the headers it would set, and marks which one wins when groups set the same header. Groups that target tabs are listed apart, since they apply in their picked tabs whatever the URL. In those tabs, list order still counts: when one sets a header that a matching group lower in the list sets too, its value wins there, and the other shows **overridden in picked tabs**.
 
 ## Pattern syntax
 

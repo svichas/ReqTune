@@ -88,7 +88,7 @@ export function App() {
             groups={groups}
             tabs={tabs}
             tabSelections={tabSelections}
-            defaultUrl={isFullPage ? undefined : tabs.find((tab) => tab.current && tab.url)?.url}
+            defaultUrl={isFullPage ? undefined : tabs.find((tab) => tab.current && /^https?:/.test(tab.url ?? ''))?.url}
           />
         )}
 
