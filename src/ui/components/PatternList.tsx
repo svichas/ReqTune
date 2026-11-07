@@ -14,8 +14,9 @@ interface Props {
 /** The pattern rows alone: GroupTarget draws the label row, with its URL patterns / Tabs switch. */
 export function PatternList({ patterns, autoFocus, onChange }: Props) {
   const { ref, focusAfterRender } = useFocusAfterRender(autoFocus ? '0' : undefined);
-  // Patterns over Chrome's regex compile-size limit (the worker skips them); only Chrome can tell, asynchronously.
-  const [tooComplex, setTooComplex] = useState<string[]>([]);
+  // Patterns Chrome can't compile, over its regex size limit or (from `regex:`) not RE2; the worker skips them. Only
+  // Chrome can tell, asynchronously.
+  const [unsupported, setUnsupported] = useState<string[]>([]);
 
   useEffect(() => {
     let current = true;
@@ -26,7 +27,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
         return !(await chrome.declarativeNetRequest.isRegexSupported({ regex, isCaseSensitive: false })).isSupported;
       }),
     ).then((flags) => {
-      if (current) setTooComplex(patterns.filter((_, i) => flags[i]));
+      if (current) setUnsupported(patterns.filter((_, i) => flags[i]));
     });
     return () => {
       current = false;
@@ -34,8 +35,17 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
   }, [patterns]);
 
   const errorFor = (pattern: string) => {
-    if (pattern.trim() !== '' && patternToRegex(pattern) === null) return 'Invalid pattern; see Help for the syntax';
-    if (tooComplex.includes(pattern)) return 'Too long or complex for Chrome: shorten it or use fewer *';
+    const isRegex = pattern.trim().startsWith('regex:');
+    if (pattern.trim() !== '' && patternToRegex(pattern) === null) {
+      return isRegex
+        ? 'Invalid regex; Chrome takes ASCII-only RE2, with no lookarounds or backreferences'
+        : 'Invalid pattern; see Help for the syntax';
+    }
+    if (unsupported.includes(pattern)) {
+      return isRegex
+        ? 'Not valid RE2, or too long or complex for Chrome'
+        : 'Too long or complex for Chrome: shorten it or use fewer *';
+    }
   };
 
   const insert = (i: number) => {

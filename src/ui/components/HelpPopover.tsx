@@ -39,6 +39,10 @@ export function HelpPopover() {
         <Text size="xs" c="dimmed" mt="sm">
           Add <Code>?</Code> to match the query string too; otherwise it is ignored.
         </Text>
+        <Text size="xs" c="dimmed" mt="xs">
+          Start with <Code>regex:</Code> for a regular expression instead. Chrome uses RE2, so no lookarounds or
+          backreferences.
+        </Text>
         <Divider my="md" />
         <Text size="xs" className={classes.fact}>
           <IconArrowBarToUp size={14} />

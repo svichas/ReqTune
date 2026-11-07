@@ -22,7 +22,7 @@
 ## Features
 
 - **Groups** — pair wildcard URL patterns with the headers to send, and flip each group on or off.
-- **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
+- **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
@@ -76,10 +76,12 @@ A group shows **Inactive** until it has a valid header and something to target: 
 | `https://example.com/*` | HTTPS requests only |
 | `/graphql` | That path on any host |
 | `example.com/search?q=*` | Paths whose query string matches too |
+| `regex:^https://(api\|admin)\.example\.com/v[0-9]+/` | URLs the regular expression after `regex:` matches, here any API version on two hosts |
 
 - In the host, `*` never crosses a `/`, so `example.com` can't match `example.com.evil.com`.
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
+- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`, and ignores case like the rest. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII.
 - Chrome limits how complex each pattern can be. Very long patterns (roughly 70+ characters, or many `*`) are flagged in the panel and skipped, and every other rule keeps working.
 
 ## How it works

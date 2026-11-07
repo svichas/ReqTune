@@ -11,7 +11,8 @@ async function applyRules(): Promise<void> {
     const [groups, tabSelections] = await Promise.all([getGroups(), getTabSelections()]);
     // Every type must be listed: without resourceTypes Chrome skips main_frame requests.
     const rules = buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
-    // One regex over Chrome's compile-size limit would fail the whole update, so those rules are left out.
+    // One regex Chrome can't compile, over its size limit or (from `regex:`) not RE2, would fail the whole update, so
+    // those rules are left out.
     const checks = await Promise.all(
       rules.map(({ condition: { regexFilter } }) =>
         regexFilter ? dnr.isRegexSupported({ regex: regexFilter, isCaseSensitive: false }) : { isSupported: true },
@@ -28,7 +29,7 @@ async function applyRules(): Promise<void> {
       addRules: addRules.filter((rule) => rule.condition.tabIds),
     });
     const skipped = rules.length - addRules.length;
-    await setSyncError(skipped ? `${skipped} pattern(s) too long or complex for Chrome were skipped; see below.` : undefined);
+    await setSyncError(skipped ? `${skipped} pattern(s) Chrome can't use were skipped; see below.` : undefined);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await setSyncError(`Chrome rejected the update, so your latest changes aren't applied: ${message}`);
