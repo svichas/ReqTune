@@ -16,13 +16,21 @@ export function buildRules(
       .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
       .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
     if (!requestHeaders.length) return;
+    // Picked filters narrow the rule; none leaves every request, as before (Chrome rejects empty lists). Types this
+    // Chrome doesn't know are dropped: one would fail the whole update.
+    const types = resourceTypes.filter((type) => group.resourceTypes?.includes(type));
+    const methods = (group.requestMethods ?? []) as chrome.declarativeNetRequest.RequestMethod[];
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
       // earlier groups win.
       priority: groups.length - index,
       action: { type: 'modifyHeaders', requestHeaders },
-      condition: { ...condition, resourceTypes },
+      condition: {
+        ...condition,
+        resourceTypes: types.length ? types : resourceTypes,
+        ...(methods.length ? { requestMethods: methods } : {}),
+      },
     });
     if (group.target === 'tabs') {
       // No URL filter: every request from the picked tabs. With none picked the group applies nowhere, and Chrome

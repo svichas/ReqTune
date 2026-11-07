@@ -6,6 +6,7 @@ import type { Group } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
+import { GroupFilters } from './GroupFilters';
 import { type GroupActions, GroupMenu } from './GroupMenu';
 import { GroupTarget } from './GroupTarget';
 import { HeaderList } from './HeaderList';
@@ -124,6 +125,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             required={group.enabled && headers === 0}
             onChange={(next) => onChange({ ...group, headers: next })}
           />
+          <GroupFilters group={group} onChange={onChange} />
         </div>
       </Collapse>
     </div>

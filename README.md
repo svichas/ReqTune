@@ -25,6 +25,7 @@
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
+- **Request filters** — limit a group to some kinds of requests, say Fetch/XHR or POST only, and leave page loads, images and the rest alone.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
@@ -56,6 +57,8 @@ Then load the `dist/` folder the same way.
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
+
+To limit a group to some kinds of requests, open **Filters** below its headers and pick resource types (**Page loads**, **Fetch/XHR**, **Scripts** and more; **Other** covers the rest, such as beacons and CSP reports), methods (**GET**, **POST**…) or both. A request must match a picked type and a picked method; a list with nothing picked matches everything, so a new group starts on **All requests**. Chrome only matches methods on HTTP requests, so picking one also leaves out WebSockets.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
