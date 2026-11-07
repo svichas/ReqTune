@@ -8,7 +8,8 @@ describe('filterSummary', () => {
     [{ resourceTypes: ['xmlhttprequest'], requestMethods: ['post'] }, 'Fetch/XHR · POST'],
     [{ resourceTypes: ['script', 'main_frame'] }, 'Page loads, Scripts'],
     [{ requestMethods: ['put', 'get'] }, 'GET, PUT'],
-    [{ resourceTypes: ['ping'], requestMethods: ['connect'] }, 'Other · Other'],
+    [{ resourceTypes: ['ping'], requestMethods: ['connect'] }, 'Other · Other methods'],
+    [{ requestMethods: ['connect'] }, 'Other methods'],
   ])('%j reads %j', (filters, summary) => expect(filterSummary(filters)).toBe(summary));
 });
 

@@ -66,7 +66,7 @@ describe('buildRules', () => {
       {
         ...group(['api.com'], [header]),
         resourceTypes: ['xmlhttprequest', 'not_a_type'],
-        requestMethods: ['post', 'put'],
+        requestMethods: ['post', 'put', 'POST'],
       },
       { ...group([], [header]), id: 'tabs', target: 'tabs', requestMethods: ['get'] },
     ];
@@ -81,8 +81,8 @@ describe('buildRules', () => {
     const groups: Group[] = [
       group(['a.com'], [header]),
       { ...group(['b.com'], [header]), resourceTypes: [], requestMethods: [] },
-      // Only types this Chrome doesn't know: Chrome would reject them, so the group keeps every type.
-      { ...group(['c.com'], [header]), resourceTypes: ['not_a_type'] },
+      // Only values Chrome doesn't know: it would reject them, so the group keeps every type and method.
+      { ...group(['c.com'], [header]), resourceTypes: ['not_a_type'], requestMethods: ['POST'] },
     ];
     const rules = buildRules(groups, {}, resourceTypes);
     expect(rules).toEqual([

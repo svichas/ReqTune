@@ -49,7 +49,10 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
   const headers = group.headers.filter((h) => isValidHeaderName(h.name.trim()) && isValidHeaderValue(h.value)).length;
-  const inactive = group.enabled && (targets === 0 || headers === 0);
+  // Chrome never matches a WebSocket request by method, so a WebSocket-only group with methods picked sends nothing.
+  const types = group.resourceTypes ?? [];
+  const noRequests = !!group.requestMethods?.length && types.length > 0 && types.every((type) => type === 'websocket');
+  const inactive = group.enabled && (targets === 0 || headers === 0 || noRequests);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
   const onHeaderClick = (e: MouseEvent<HTMLElement>) => {

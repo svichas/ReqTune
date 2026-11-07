@@ -40,7 +40,11 @@ export const valuesFor = (options: FilterOptions, labels: string[]) =>
 
 /** What a group's filters limit it to in one line, like 'Fetch/XHR · POST'; empty while it takes every request. */
 export const filterSummary = ({ resourceTypes, requestMethods }: Pick<Group, 'resourceTypes' | 'requestMethods'>) =>
-  [labelsFor(RESOURCE_TYPES, resourceTypes), labelsFor(REQUEST_METHODS, requestMethods)]
+  [
+    labelsFor(RESOURCE_TYPES, resourceTypes),
+    // Both lists have an "Other", so the methods' one says which it is.
+    labelsFor(REQUEST_METHODS, requestMethods).map((label) => (label === 'Other' ? 'Other methods' : label)),
+  ]
     .filter((labels) => labels.length)
     .map((labels) => labels.join(', '))
     .join(' · ');

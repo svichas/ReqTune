@@ -47,6 +47,7 @@ export function GroupFilters({ group, onChange }: Props) {
             options={REQUEST_METHODS}
             values={group.requestMethods}
             note="Picking a method leaves out requests that aren't HTTP, such as WebSockets."
+            warn={!!group.requestMethods?.length && !!group.resourceTypes?.includes('websocket')}
             onChange={(requestMethods) => onChange({ ...group, requestMethods })}
           />
         </div>
@@ -61,12 +62,15 @@ interface FilterChipsProps {
   /** Chrome's values picked so far. */
   values?: string[];
   note?: string;
+  /** The picks run into what the note describes, so it shows as a warning. */
+  warn?: boolean;
   onChange: (values: string[]) => void;
 }
 
 /** One list of options to pick from; with none picked, the group takes all of them. */
-function FilterChips({ label, options, values, note, onChange }: FilterChipsProps) {
+function FilterChips({ label, options, values, note, warn, onChange }: FilterChipsProps) {
   const labelId = useId();
+  const noteId = useId();
   return (
     <div>
       <FieldHead required={false}>
@@ -74,7 +78,12 @@ function FilterChips({ label, options, values, note, onChange }: FilterChipsProp
           {label}
         </Text>
       </FieldHead>
-      <div role="group" aria-labelledby={labelId} className={classes.chips}>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        aria-describedby={note ? noteId : undefined}
+        className={classes.chips}
+      >
         <Chip.Group
           multiple
           value={labelsFor(options, values)}
@@ -88,7 +97,7 @@ function FilterChips({ label, options, values, note, onChange }: FilterChipsProp
         </Chip.Group>
       </div>
       {note && (
-        <Text size="xs" c="dimmed" px={2} pt={6}>
+        <Text id={noteId} size="xs" c={warn ? 'orange' : 'dimmed'} px={2} pt={6}>
           {note}
         </Text>
       )}
