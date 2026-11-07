@@ -22,6 +22,7 @@
 ## Features
 
 - **Groups** — pair wildcard URL patterns with the headers to send, and flip each group on or off.
+- **Response headers** — set headers on the responses too, say a `Content-Security-Policy` you want to try before it ships.
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
@@ -56,6 +57,8 @@ Then load the `dist/` folder the same way.
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
+
+**Response headers**, below the request headers, go on the responses to the same requests; a group needs a valid header in either list. They change headers only: a response's status code and body stay as the server sent them.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 

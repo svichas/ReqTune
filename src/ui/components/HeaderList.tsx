@@ -3,12 +3,14 @@ import { ActionIcon, Autocomplete, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
-import { COMMON_HEADERS, isSecretHeader } from '../headers';
+import { isSecretHeader } from '../headers';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 
 interface Props {
+  label: string;
   headers: HeaderEntry[];
+  suggestions: string[];
   required: boolean;
   onChange: (headers: HeaderEntry[]) => void;
 }
@@ -16,7 +18,7 @@ interface Props {
 const inputClassNames = { input: classes.input, error: classes.error };
 const nameClassNames = { ...inputClassNames, option: classes.option };
 
-export function HeaderList({ headers, required, onChange }: Props) {
+export function HeaderList({ label, headers, suggestions, required, onChange }: Props) {
   const { ref, focus, focusAfterRender } = useFocusAfterRender();
   // Row index -> the header name its value was revealed for, so renaming or shifting rows hides it again.
   const [revealed, setRevealed] = useState<Record<number, string | undefined>>({});
@@ -48,7 +50,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
 
   return (
     <FieldList
-      label="Request headers"
+      label={label}
       required={required}
       addLabel="Add header"
       addRef={ref('add')}
@@ -69,7 +71,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
               placeholder="Header-Name"
               autoComplete="off"
               spellCheck={false}
-              data={COMMON_HEADERS}
+              data={suggestions}
               limit={8}
               openOnFocus={false}
               value={header.name}

@@ -6,6 +6,7 @@ describe('isSecretHeader', () => {
     'Authorization',
     'proxy-authorization',
     'Cookie',
+    'Set-Cookie',
     'X-Api-Key',
     'apikey',
     'X_API_KEY',

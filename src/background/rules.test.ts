@@ -37,6 +37,31 @@ describe('buildRules', () => {
     ]);
   });
 
+  it('sets response headers in the same rule, leaving out a list with nothing valid to set', () => {
+    const set = (header: string, value: string) => [{ header, operation: 'set', value }];
+    const groups: Group[] = [
+      group(['request.com'], [{ name: 'X-Token', value: 'r' }]),
+      {
+        ...group(['response.com'], [{ name: '', value: '' }]),
+        responseHeaders: [
+          { name: ' Access-Control-Allow-Origin ', value: '*' },
+          { name: 'Bad Name', value: 'x' },
+        ],
+      },
+      {
+        ...group(['both.com'], [{ name: 'X-Token', value: 'b' }]),
+        responseHeaders: [{ name: 'Set-Cookie', value: 'id=1' }],
+      },
+      { ...group(['neither.com'], []), responseHeaders: [{ name: 'X-Bad-Value', value: 'line\nbreak' }] },
+    ];
+    // Strict, so a left-out list can't be an undefined key either; Chrome rejects the whole update over an empty one.
+    expect(buildRules(groups, {}, resourceTypes).map((r) => r.action)).toStrictEqual([
+      { type: 'modifyHeaders', requestHeaders: set('X-Token', 'r') },
+      { type: 'modifyHeaders', responseHeaders: set('Access-Control-Allow-Origin', '*') },
+      { type: 'modifyHeaders', requestHeaders: set('X-Token', 'b'), responseHeaders: set('Set-Cookie', 'id=1') },
+    ]);
+  });
+
   it('targets either URL patterns or every request from the picked tabs, never both', () => {
     const header = { name: 'X-Token', value: 't' };
     const groups: Group[] = [

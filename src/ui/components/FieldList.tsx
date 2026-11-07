@@ -31,7 +31,8 @@ export function FieldHead({ required, children }: { required: boolean; children:
 /** A quiet filled container: one row per entry, hairlines between rows, an "Add" row at the bottom. */
 export function FieldList({ label, required = false, addLabel, onAdd, addRef, children }: Props) {
   return (
-    <div>
+    // Both header lists label their rows alike ("Header 1 name"), so a labelled list is a group named after it.
+    <div role={label && 'group'} aria-label={label}>
       {label !== undefined && (
         <FieldHead required={required}>
           <Text span size="xs" fw={500} c="dimmed">
