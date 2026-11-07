@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Alert, Box, Button, UnstyledButton } from '@mantine/core';
-import { IconAlertTriangle, IconExternalLink, IconPlus } from '@tabler/icons-react';
+import { ActionIcon, Alert, Box, Button, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconAlertTriangle, IconExternalLink, IconPlus, IconWorldSearch } from '@tabler/icons-react';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
 import { EmptyState } from './components/EmptyState';
 import { type FocusTarget, GroupCard } from './components/GroupCard';
 import { HelpPopover } from './components/HelpPopover';
 import { type Deleted, UndoBar } from './components/UndoBar';
+import { UrlTester } from './components/UrlTester';
 import { isFullPage, openFullPage } from './fullPage';
 import { useGroups } from './hooks/useGroups';
 import { useOpenTabs } from './hooks/useOpenTabs';
@@ -18,6 +19,7 @@ export function App() {
   const syncError = useSyncError();
   const [focus, setFocus] = useState<{ id: string; target: FocusTarget }>();
   const [deleted, setDeleted] = useState<Deleted>();
+  const [testing, setTesting] = useState(false);
 
   const insertAt = (index: number, group: Group, target: FocusTarget) => {
     setFocus({ id: group.id, target });
@@ -61,6 +63,17 @@ export function App() {
             <Box component="img" src="/brand/logo-dark.svg" alt="ReqTune" className={classes.logo} lightHidden />
           </h1>
         )}
+        <Tooltip label="Test a URL">
+          <ActionIcon
+            size="lg"
+            variant={testing ? 'light' : 'subtle'}
+            aria-label="Test a URL"
+            aria-expanded={testing}
+            onClick={() => setTesting(!testing)}
+          >
+            <IconWorldSearch size={20} />
+          </ActionIcon>
+        </Tooltip>
         <HelpPopover />
         {/* Disabled while loading: adding then would overwrite the stored groups with just the new one. */}
         <Button size="compact-sm" variant="light" leftSection={<IconPlus size={14} />} disabled={loading} onClick={addGroup}>
@@ -70,6 +83,15 @@ export function App() {
 
       {/* Only the list scrolls: a sticky header would cover inputs that keyboard focus scrolls to the top edge. */}
       <main className={classes.main}>
+        {testing && tabs && (
+          <UrlTester
+            groups={groups}
+            tabs={tabs}
+            tabSelections={tabSelections}
+            defaultUrl={isFullPage ? undefined : tabs.find((tab) => tab.current && tab.url)?.url}
+          />
+        )}
+
         {syncError && (
           <Alert
             m="md"
