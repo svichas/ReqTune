@@ -4,7 +4,7 @@ export interface HeaderEntry {
   value: string;
 }
 
-/** URL patterns plus the headers applied to requests matching any of them. */
+/** URL patterns plus the headers applied to requests matching any of them, and to their responses. */
 export interface Group {
   id: string;
   name: string;

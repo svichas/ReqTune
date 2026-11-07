@@ -56,4 +56,6 @@ export const COMMON_RESPONSE_HEADERS = [
 const SECRET = /auth|token|secret|passw|cookie|session|credential|api-?key|signature|jwt|bearer|csrf|xsrf|(^|[-_])key([-_]|$)/i;
 
 /** Whether a header's value stays hidden until the user reveals it. */
-export const isSecretHeader = (name: string): boolean => SECRET.test(name);
+export const isSecretHeader = (name: string): boolean =>
+  // CORS headers only mention credentials (Access-Control-Allow-Credentials: true), never carry them.
+  SECRET.test(name) && !/^access-control-/i.test(name);

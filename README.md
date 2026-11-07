@@ -58,7 +58,7 @@ Then load the `dist/` folder the same way.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
 
-**Response headers**, below the request headers, go on the responses to the same requests; a group needs a valid header in either list. They change headers only: a response's status code and body stay as the server sent them.
+**Response headers**, below the request headers, go on the responses to the same requests; a group needs a valid header in either list. Each one replaces any header of that name the server sent, so a `Set-Cookie` row replaces every cookie those responses set, and only the first row with a given name applies. They change headers only: a response's status code and body stay as the server sent them.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
