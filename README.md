@@ -57,7 +57,7 @@ Then load the `dist/` folder the same way.
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
-5. To see how a page copes without a script, an API call or analytics, switch the group from **Set headers** to **Block**: Chrome cancels the requests it matches before they're sent. A block beats every group's headers, wherever it sits in the list, and the header rows stay for when you switch back. Careful with **Tabs**: a group that blocks a tab blocks its page loads too, so a reload leaves the tab blank but for Chrome's blocked-page error.
+5. To see how a page copes without a script, an API call or analytics, switch the group from **Set headers** to **Block**: Chrome cancels the requests it matches before they're sent. A block beats every group's headers, wherever it sits in the list, and the header rows stay for when you switch back. Careful with **Tabs**: a group that blocks a tab blocks its page loads too, so a reload leaves the tab blank but for Chrome's blocked-page error. That's why a blocking group doesn't tick the tab you're on for you.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
@@ -90,8 +90,8 @@ A group shows **Inactive** until it has a valid header (a blocking group needs n
 flowchart LR
   UI["Side panel<br/>(React + Mantine)"] -- saves groups --> S[("chrome.storage.local")]
   S -- onChanged --> SW["Service worker"]
-  SW -- updateDynamicRules --> DNR["declarativeNetRequest<br/>modifyHeaders rules"]
-  DNR -- sets headers on --> R(("Matching requests"))
+  SW -- updateDynamicRules --> DNR["declarativeNetRequest<br/>modifyHeaders and block rules"]
+  DNR -- sets headers on, or blocks --> R(("Matching requests"))
 ```
 
 The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each pattern compiles to an anchored regex, rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
@@ -102,11 +102,11 @@ A group that targets tabs becomes a single session rule with a `tabIds` conditio
 
 | Permission | Why |
 | --- | --- |
-| `declarativeNetRequestWithHostAccess` | Apply the header rules |
+| `declarativeNetRequestWithHostAccess` | Apply the header and block rules |
 | `storage` | Save your groups |
 | `sidePanel` | Show the UI in Chrome's side panel |
 | `favicon` | Show site icons in the tab picker, from Chrome's icon cache. Adds no install warning, since ReqTune already has site access. |
-| Access to all sites | Set headers on whichever sites your patterns name. You can narrow this in the extension's Chrome settings. |
+| Access to all sites | Set headers on, or block requests to, whichever sites your patterns name. You can narrow this in the extension's Chrome settings. |
 
 Header values (tokens included) are stored unencrypted in the extension's local storage.
 

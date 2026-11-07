@@ -124,6 +124,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
           />
           <SegmentedControl
             className={classes.action}
+            color="tune"
             aria-label="Action"
             data={[
               { value: 'headers', label: 'Set headers' },

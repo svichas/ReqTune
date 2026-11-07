@@ -20,7 +20,7 @@ export function buildRules(
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
-      // earlier groups win.
+      // earlier groups win. Blocks are checked before any header is set, so a block wins wherever its group sits.
       priority: groups.length - index,
       action: block ? { type: 'block' } : { type: 'modifyHeaders', requestHeaders },
       condition: { ...condition, resourceTypes },

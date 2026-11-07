@@ -4,7 +4,7 @@ export interface HeaderEntry {
   value: string;
 }
 
-/** URL patterns plus the headers applied to requests matching any of them. */
+/** URL patterns plus what to do with requests matching any of them: apply the headers, or block them. */
 export interface Group {
   id: string;
   name: string;
@@ -13,8 +13,8 @@ export interface Group {
   patterns: string[];
   headers: HeaderEntry[];
   /**
-   * Which requests get the headers: those matching `patterns`, from any tab (the default), or every request from the
-   * tabs picked for the group in TabSelections, whatever its URL. Never both.
+   * Which requests the group applies to: those matching `patterns`, from any tab (the default), or every request from
+   * the tabs picked for the group in TabSelections, whatever its URL. Never both.
    */
   target?: 'patterns' | 'tabs';
   /** Set `headers` on those requests (the default), or block them; a blocking group keeps its headers, unused. */
