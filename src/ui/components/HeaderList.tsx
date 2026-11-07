@@ -3,7 +3,7 @@ import { ActionIcon, Autocomplete, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
-import { COMMON_HEADERS, isSecretHeader } from '../headers';
+import { COMMON_HEADERS, isSecretHeader, valuePresets } from '../headers';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 
@@ -15,6 +15,7 @@ interface Props {
 
 const inputClassNames = { input: classes.input, error: classes.error };
 const nameClassNames = { ...inputClassNames, option: classes.option };
+const presetClassNames = { ...inputClassNames, dropdown: classes.presets };
 
 export function HeaderList({ headers, required, onChange }: Props) {
   const { ref, focus, focusAfterRender } = useFocusAfterRender();
@@ -58,6 +59,9 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const name = header.name.trim();
         const secret = isSecretHeader(name);
         const shown = revealed[i] === header.name;
+        const presets = valuePresets(name);
+        const presetLabel = (value: string) => presets.find((preset) => preset.value === value)?.label ?? '';
+        const valueError = isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks";
         return (
           <div key={i} className={classes.row}>
             <Autocomplete
@@ -75,39 +79,66 @@ export function HeaderList({ headers, required, onChange }: Props) {
               value={header.name}
               error={name !== '' && !isValidHeaderName(name) ? 'Use letters, digits and - only' : undefined}
               onChange={(value) => update(i, { name: value })}
-              onOptionSubmit={() => focus(`value${i}`)}
+              // After the render, since naming a row User-Agent swaps in a value field with presets.
+              onOptionSubmit={() => focusAfterRender(`value${i}`)}
               onKeyDown={onKeyDown(i, 'name')}
             />
-            <TextInput
-              ref={ref(`value${i}`)}
-              variant="unstyled"
-              className={classes.value}
-              classNames={inputClassNames}
-              aria-label={`Header ${i + 1} value`}
-              placeholder="value"
-              autoComplete="off"
-              spellCheck={false}
-              value={header.value}
-              data-masked={(secret && !shown) || undefined}
-              rightSectionWidth={32}
-              rightSectionPointerEvents="all"
-              rightSection={
-                secret ? (
-                  <Tooltip label={shown ? 'Hide value' : 'Show value'}>
-                    <ActionIcon
-                      size={24}
-                      aria-label={`${shown ? 'Hide' : 'Show'} header ${i + 1} value`}
-                      onClick={() => setRevealed({ ...revealed, [i]: shown ? undefined : header.name })}
-                    >
-                      {shown ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-                    </ActionIcon>
-                  </Tooltip>
-                ) : undefined
-              }
-              error={isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks"}
-              onChange={(e) => update(i, { value: e.currentTarget.value })}
-              onKeyDown={onKeyDown(i, 'value')}
-            />
+            {presets.length ? (
+              <Autocomplete
+                ref={ref(`value${i}`)}
+                variant="unstyled"
+                className={classes.value}
+                classNames={presetClassNames}
+                aria-label={`Header ${i + 1} value`}
+                placeholder="value"
+                autoComplete="off"
+                spellCheck={false}
+                // The options are the values, so picking one fills it in; the list shows and matches their labels.
+                data={presets.map((preset) => preset.value)}
+                renderOption={({ option }) => presetLabel(option.value)}
+                filter={({ options, search }) => {
+                  const query = search.trim().toLowerCase();
+                  return options.filter((option) => 'value' in option && presetLabel(option.value).toLowerCase().includes(query));
+                }}
+                // Mantine's default scroll area would cut off the last presets.
+                withScrollArea={false}
+                value={header.value}
+                error={valueError}
+                onChange={(value) => update(i, { value })}
+                onKeyDown={onKeyDown(i, 'value')}
+              />
+            ) : (
+              <TextInput
+                ref={ref(`value${i}`)}
+                variant="unstyled"
+                className={classes.value}
+                classNames={inputClassNames}
+                aria-label={`Header ${i + 1} value`}
+                placeholder="value"
+                autoComplete="off"
+                spellCheck={false}
+                value={header.value}
+                data-masked={(secret && !shown) || undefined}
+                rightSectionWidth={32}
+                rightSectionPointerEvents="all"
+                rightSection={
+                  secret ? (
+                    <Tooltip label={shown ? 'Hide value' : 'Show value'}>
+                      <ActionIcon
+                        size={24}
+                        aria-label={`${shown ? 'Hide' : 'Show'} header ${i + 1} value`}
+                        onClick={() => setRevealed({ ...revealed, [i]: shown ? undefined : header.name })}
+                      >
+                        {shown ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  ) : undefined
+                }
+                error={valueError}
+                onChange={(e) => update(i, { value: e.currentTarget.value })}
+                onKeyDown={onKeyDown(i, 'value')}
+              />
+            )}
             <RemoveButton label={`Remove header ${i + 1}`} onClick={() => remove(i)} />
           </div>
         );
