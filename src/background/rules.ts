@@ -15,13 +15,14 @@ export function buildRules(
     const requestHeaders = group.headers
       .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
       .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
-    if (!requestHeaders.length) return;
+    const block = group.action === 'block';
+    if (!block && !requestHeaders.length) return;
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
       // earlier groups win.
       priority: groups.length - index,
-      action: { type: 'modifyHeaders', requestHeaders },
+      action: block ? { type: 'block' } : { type: 'modifyHeaders', requestHeaders },
       condition: { ...condition, resourceTypes },
     });
     if (group.target === 'tabs') {

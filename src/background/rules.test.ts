@@ -17,6 +17,12 @@ const rule = (id: number, priority: number, pattern: string, header: string, val
   action: { type: 'modifyHeaders', requestHeaders: [{ header, operation: 'set', value }] },
   condition: { regexFilter: patternToRegex(pattern), resourceTypes },
 });
+const block = (id: number, priority: number, condition: object) => ({
+  id,
+  priority,
+  action: { type: 'block' },
+  condition: { ...condition, resourceTypes },
+});
 
 describe('buildRules', () => {
   it('builds one rule per valid pattern of each enabled group, earlier groups first', () => {
@@ -65,5 +71,33 @@ describe('buildRules', () => {
     // token) would start going to every site those tabs talk to; on patterns they stay with the sites named.
     const legacy = { ...group(['api.example.com'], [{ name: 'X-Token', value: 't' }]), limitToTabs: true } as Group;
     expect(buildRules([legacy], { '': [3] }, resourceTypes)).toEqual([rule(1, 1, 'api.example.com', 'X-Token', 't')]);
+  });
+
+  it('blocks what a blocking group targets, by pattern or tab, with no headers needed', () => {
+    const groups: Group[] = [
+      { ...group(['ads.example.com', 'not valid', '/collect'], []), action: 'block' },
+      { ...group(['ignored.com'], [{ name: 'X-Token', value: 't' }]), id: 'tabs', target: 'tabs', action: 'block' },
+      { ...group(['nothing.com'], []), id: 'nothing-picked', target: 'tabs', action: 'block' },
+      { ...group(['disabled.com'], [], false), action: 'block' },
+    ];
+    expect(buildRules(groups, { tabs: [3, 7] }, resourceTypes)).toEqual([
+      block(1, 4, { regexFilter: patternToRegex('ads.example.com') }),
+      block(2, 4, { regexFilter: patternToRegex('/collect') }),
+      block(3, 3, { tabIds: [3, 7] }),
+    ]);
+  });
+
+  it('gives blocking groups the same order-based priority as header groups', () => {
+    const header = { name: 'X-Token', value: 't' };
+    const groups: Group[] = [
+      group(['a.com'], [header]),
+      { ...group(['a.com'], [header]), action: 'block' },
+      { ...group(['b.com'], [header]), action: 'headers' },
+    ];
+    expect(buildRules(groups, {}, resourceTypes)).toEqual([
+      rule(1, 3, 'a.com', 'X-Token', 't'),
+      block(2, 2, { regexFilter: patternToRegex('a.com') }),
+      rule(3, 1, 'b.com', 'X-Token', 't'),
+    ]);
   });
 });

@@ -25,6 +25,7 @@
 - **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
+- **Block requests** — switch a group to **Block** to cancel the requests it matches instead, and see how a page copes without a script, an API call or analytics.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
@@ -56,12 +57,13 @@ Then load the `dist/` folder the same way.
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
+5. To see how a page copes without a script, an API call or analytics, switch the group from **Set headers** to **Block**: Chrome cancels the requests it matches before they're sent. A block beats every group's headers, wherever it sits in the list, and the header rows stay for when you switch back. Careful with **Tabs**: a group that blocks a tab blocks its page loads too, so a reload leaves the tab blank but for Chrome's blocked-page error.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 
-A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
+A group shows **Inactive** until it has a valid header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
 ## Pattern syntax
 
