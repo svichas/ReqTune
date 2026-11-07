@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useState } from 'react';
-import { ActionIcon, Autocomplete, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Autocomplete, Checkbox, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
@@ -58,8 +58,19 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const name = header.name.trim();
         const secret = isSecretHeader(name);
         const shown = revealed[i] === header.name;
+        const on = header.enabled !== false;
         return (
-          <div key={i} className={classes.row}>
+          <div key={i} className={classes.row} data-off={!on || undefined}>
+            <Checkbox.Card
+              className={classes.toggle}
+              radius={0}
+              withBorder={false}
+              aria-label={`Send header ${i + 1}`}
+              checked={on}
+              onChange={(enabled) => update(i, { enabled })}
+            >
+              <Checkbox.Indicator size="xs" />
+            </Checkbox.Card>
             <Autocomplete
               ref={ref(`name${i}`)}
               variant="unstyled"

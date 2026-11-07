@@ -37,6 +37,23 @@ describe('buildRules', () => {
     ]);
   });
 
+  it('skips headers switched off; headers saved before the switch existed stay on', () => {
+    const groups = [
+      group(['off.com'], [{ name: 'X-Token', value: 'off', enabled: false }]),
+      group(['on.com'], [{ name: 'X-Token', value: 'on', enabled: true }]),
+      group(['saved.com'], [{ name: 'X-Token', value: 'saved' }]),
+      group(['mixed.com'], [
+        { name: 'X-Paused', value: 'p', enabled: false },
+        { name: 'X-Token', value: 'mixed' },
+      ]),
+    ];
+    expect(buildRules(groups, {}, resourceTypes)).toEqual([
+      rule(1, 3, 'on.com', 'X-Token', 'on'),
+      rule(2, 2, 'saved.com', 'X-Token', 'saved'),
+      rule(3, 1, 'mixed.com', 'X-Token', 'mixed'),
+    ]);
+  });
+
   it('targets either URL patterns or every request from the picked tabs, never both', () => {
     const header = { name: 'X-Token', value: 't' };
     const groups: Group[] = [

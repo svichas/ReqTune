@@ -13,6 +13,7 @@ export function buildRules(
   groups.forEach((group, index) => {
     if (!group.enabled) return;
     const requestHeaders = group.headers
+      .filter(({ enabled }) => enabled !== false)
       .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
       .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
     if (!requestHeaders.length) return;

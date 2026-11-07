@@ -117,8 +117,24 @@ input.input[data-masked] {
 }
 
 /* The container clips outside outlines, so draw Mantine's focus ring inside. */
-.box .add:focus-visible {
+.box .add:focus-visible,
+.box .toggle:focus-visible {
   outline-offset: -2px;
+}
+
+/* A header's on/off box: the whole 32px square toggles, so the small box is still an easy target. `button.` raises
+   specificity above Mantine's card rules, whatever the stylesheet order. */
+button.toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Headers that are off recede like off groups; the box stays crisp so turning one back on is obvious. */
+.row[data-off] :is(.name, .value) {
+  opacity: 0.6;
 }
 
 /* Header rows: name | value, split by a hairline; names get slightly more room than values. */

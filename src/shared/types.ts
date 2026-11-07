@@ -2,6 +2,8 @@
 export interface HeaderEntry {
   name: string;
   value: string;
+  /** Off keeps the header in its group without sending it; absent means on. */
+  enabled?: boolean;
 }
 
 /** URL patterns plus the headers applied to requests matching any of them. */
