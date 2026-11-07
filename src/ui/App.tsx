@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Alert, Box, Button, UnstyledButton } from '@mantine/core';
-import { IconAlertTriangle, IconExternalLink, IconPlus } from '@tabler/icons-react';
+import { useRef, useState } from 'react';
+import { ActionIcon, Alert, Box, Button, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconAlertTriangle, IconExternalLink, IconPlayerPause, IconPlayerPlay, IconPlus } from '@tabler/icons-react';
+import { setPaused } from '../shared/storage';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
 import { EmptyState } from './components/EmptyState';
@@ -10,12 +11,16 @@ import { type Deleted, UndoBar } from './components/UndoBar';
 import { isFullPage, openFullPage } from './fullPage';
 import { useGroups } from './hooks/useGroups';
 import { useOpenTabs } from './hooks/useOpenTabs';
+import { usePaused } from './hooks/usePaused';
 import { useSyncError } from './hooks/useSyncError';
 
 export function App() {
   const { groups, setGroups, tabSelections, setTabSelections, loading } = useGroups();
   const tabs = useOpenTabs();
   const syncError = useSyncError();
+  const paused = usePaused();
+  const pauseLabel = paused ? 'Resume all groups' : 'Pause all groups';
+  const pauseRef = useRef<HTMLButtonElement>(null);
   const [focus, setFocus] = useState<{ id: string; target: FocusTarget }>();
   const [deleted, setDeleted] = useState<Deleted>();
 
@@ -61,6 +66,11 @@ export function App() {
             <Box component="img" src="/brand/logo-dark.svg" alt="ReqTune" className={classes.logo} lightHidden />
           </h1>
         )}
+        <Tooltip label={pauseLabel}>
+          <ActionIcon ref={pauseRef} size="lg" aria-label={pauseLabel} onClick={() => void setPaused(!paused)}>
+            {paused ? <IconPlayerPlay size={20} /> : <IconPlayerPause size={20} />}
+          </ActionIcon>
+        </Tooltip>
         <HelpPopover />
         {/* Disabled while loading: adding then would overwrite the stored groups with just the new one. */}
         <Button size="compact-sm" variant="light" leftSection={<IconPlus size={14} />} disabled={loading} onClick={addGroup}>
@@ -70,6 +80,30 @@ export function App() {
 
       {/* Only the list scrolls: a sticky header would cover inputs that keyboard focus scrolls to the top edge. */}
       <main className={classes.main}>
+        {paused && (
+          <Alert
+            m="md"
+            variant="light"
+            role="status"
+            icon={<IconPlayerPause size={16} />}
+            classNames={{ message: classes.pausedMessage }}
+          >
+            Paused: no headers are being changed.
+            {/* Resuming removes this button, so focus moves to the header's toggle rather than back to the page. */}
+            <Button
+              size="compact-sm"
+              variant="default"
+              flex="none"
+              onClick={() => {
+                pauseRef.current?.focus();
+                void setPaused(false);
+              }}
+            >
+              Resume
+            </Button>
+          </Alert>
+        )}
+
         {syncError && (
           <Alert
             m="md"
