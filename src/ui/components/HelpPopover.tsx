@@ -40,8 +40,8 @@ export function HelpPopover() {
           Add <Code>?</Code> to match the query string too; otherwise it is ignored.
         </Text>
         <Text size="xs" c="dimmed" mt="xs">
-          Start with <Code>regex:</Code> for a regular expression instead. Chrome uses RE2, so no lookarounds or
-          backreferences.
+          Start with <Code>regex:</Code> for a regular expression instead. It matches anywhere in the URL, so pin the
+          host, as in <Code>^https://api\.example\.com/</Code>. Chrome uses RE2: no lookarounds or backreferences.
         </Text>
         <Divider my="md" />
         <Text size="xs" className={classes.fact}>
@@ -58,7 +58,7 @@ export function HelpPopover() {
         </Text>
         <Text size="xs" className={classes.fact} mt="sm">
           <IconCloudCheck size={14} />
-          Changes save automatically.
+          <span>Changes save automatically; a <Code>regex:</Code> pattern once you leave its field.</span>
         </Text>
       </Popover.Dropdown>
     </Popover>

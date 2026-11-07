@@ -4,6 +4,9 @@ const HOST_STAR = '[^/?#@]*';
 /** Escapes regex metacharacters, then expands each `*` into `star`. */
 const toRegex = (text: string, star: string) => text.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', star);
 
+/** Whether a pattern is `regex:` and a raw regex rather than wildcard syntax. */
+export const isRegexPattern = (pattern: string) => pattern.trim().startsWith('regex:');
+
 /** A `regex:` pattern's regex, or null when it's empty or Chrome would surely refuse it. */
 function rawRegex(source: string): string | null {
   // Chrome needs ASCII, and RE2 has no lookarounds or backreferences. Other escapes are dropped before looking, so a
@@ -37,7 +40,7 @@ function rawRegex(source: string): string | null {
  */
 export function patternToRegex(input: string): string | null {
   const pattern = input.trim();
-  if (pattern.startsWith('regex:')) return rawRegex(pattern.slice('regex:'.length).trim());
+  if (isRegexPattern(pattern)) return rawRegex(pattern.slice('regex:'.length).trim());
   // Besides inner whitespace, reject non-ASCII: Chrome refuses a regexFilter that isn't ASCII.
   if (/[^\x21-\x7e]/.test(pattern)) return null;
   const match = /^(?:(\*|https?|wss?):\/\/)?([^/?#:@]*)(?::(\*|\d+))?(\/.*)?$/i.exec(pattern);

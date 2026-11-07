@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TextInput } from '@mantine/core';
-import { patternToRegex } from '../../shared/pattern';
+import { isRegexPattern, patternToRegex } from '../../shared/pattern';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 
@@ -17,6 +17,9 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
   // Patterns Chrome can't compile, over its regex size limit or (from `regex:`) not RE2; the worker skips them. Only
   // Chrome can tell, asynchronously.
   const [unsupported, setUnsupported] = useState<string[]>([]);
+  // The text of a `regex:` row being typed, saved when focus leaves it: a half-typed regex matches more URLs than the
+  // finished one (`^` alone matches all), and the group's headers would go there meanwhile.
+  const [draft, setDraft] = useState<{ i: number; value: string }>();
 
   useEffect(() => {
     let current = true;
@@ -34,8 +37,21 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
     };
   }, [patterns]);
 
+  const save = (i: number, value: string) => onChange(patterns.map((p, j) => (j === i ? value : p)));
+  const commit = () => {
+    if (!draft) return;
+    setDraft(undefined);
+    save(draft.i, draft.value);
+  };
+  // Closing the panel or the page needn't blur the field first.
+  useEffect(() => {
+    if (!draft) return;
+    window.addEventListener('pagehide', commit);
+    return () => window.removeEventListener('pagehide', commit);
+  });
+
   const errorFor = (pattern: string) => {
-    const isRegex = pattern.trim().startsWith('regex:');
+    const isRegex = isRegexPattern(pattern);
     if (pattern.trim() !== '' && patternToRegex(pattern) === null) {
       return isRegex
         ? 'Invalid regex; Chrome takes ASCII-only RE2, with no lookarounds or backreferences'
@@ -64,7 +80,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
       addRef={ref('add')}
       onAdd={() => insert(patterns.length)}
     >
-      {patterns.map((pattern, i) => (
+      {patterns.map((p, i) => (draft?.i === i ? draft.value : p)).map((pattern, i) => (
         <div key={i} className={classes.row}>
           <TextInput
             ref={ref(String(i))}
@@ -77,7 +93,15 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
             spellCheck={false}
             value={pattern}
             error={errorFor(pattern)}
-            onChange={(e) => onChange(patterns.map((p, j) => (j === i ? e.currentTarget.value : p)))}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              if (isRegexPattern(value)) setDraft({ i, value });
+              else {
+                setDraft(undefined);
+                save(i, value);
+              }
+            }}
+            onBlur={commit}
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') insert(i + 1);
