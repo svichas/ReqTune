@@ -27,5 +27,6 @@ describe('isValidRequestHeader', () => {
     ['a value with a line break', { name: 'X-Token', value: 'a\r\nb' }],
     ['an append Chrome refuses', { name: 'Authorization', value: 'a', operation: 'append' }],
     ['an append with a line break', { name: 'Cookie', value: 'a\nb', operation: 'append' }],
+    ['an unknown operation', { name: 'X-Token', value: 'a', operation: 'prepend' } as unknown as HeaderEntry],
   ])('rejects %s', (_, header) => expect(isValidRequestHeader(header)).toBe(false));
 });

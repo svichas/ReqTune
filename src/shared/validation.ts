@@ -48,5 +48,8 @@ export function isValidRequestHeader({ name, value, operation = 'set' }: HeaderE
       return isValidHeaderValue(value) && canAppendRequestHeader(header);
     case 'remove':
       return true;
+    default:
+      // An operation this version doesn't know: Chrome would reject the whole update over it.
+      return false;
   }
 }
