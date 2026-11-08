@@ -22,11 +22,12 @@
 ## Features
 
 - **Groups** — pair URL patterns with the headers to send, and flip each group on or off.
+- **Response headers** — change headers on the responses too, say a `Content-Security-Policy` you want to try before it ships.
 - **Pause single headers** — untick the box beside a header to stop sending it without deleting it.
 - **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type (a `regex:` pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
-- **Set, append or remove** — replace a header (the default), add your value to the one the browser sends, or strip the header from requests.
+- **Set, append or remove** — replace a header (the default), add your value to the one already there, or strip it out.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
@@ -65,7 +66,9 @@ To stop every group at once, click the pause button in the header or press **Alt
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
-The button at the start of each header row picks what happens to that header: **Set** (`=`, the default) replaces it, **Append** (`+`) adds your value to the one the browser sends, and **Remove** (`−`) strips it from requests, so the row needs no value. Chrome only appends to a fixed list of standard headers, such as `Accept`, `Accept-Language`, `Cookie`, `User-Agent` and `X-Forwarded-For`; on any other, the row shows an error and isn't sent. Appends add up: one from a group lower in the list still adds to a header that a group above it sets.
+The button before each header's name picks what happens to that header: **Set** (`=`, the default) replaces it, **Append** (`+`) adds your value to the one already there, and **Remove** (`−`) strips it, so the row needs no value. On requests, Chrome only appends to a fixed list of standard headers, such as `Accept`, `Accept-Language`, `Cookie`, `User-Agent` and `X-Forwarded-For`; on any other, the row shows an error and isn't sent. Appends add up: one from a group lower in the list still adds to a header that a group above it sets.
+
+**Response headers**, below the request headers, go on the responses to the same requests; a group needs a valid header in either list. **Set** replaces any header of that name the server sent, so a `Set-Cookie` row replaces every cookie those responses set; **Append** adds one more instead, and works on any response header. **Remove** strips a header, say an `X-Frame-Options` that keeps a page out of frames. They change headers only: a response's status code and body stay as the server sent them.
 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 

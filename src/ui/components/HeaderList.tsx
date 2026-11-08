@@ -2,14 +2,18 @@ import { type KeyboardEvent, useState } from 'react';
 import { ActionIcon, Autocomplete, Checkbox, TextInput, Tooltip } from '@mantine/core';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
-import { canAppendRequestHeader, isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
-import { COMMON_HEADERS, isSecretHeader, valuePresets } from '../headers';
+import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
+import { isSecretHeader, valuePresets } from '../headers';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 import { OperationMenu } from './OperationMenu';
 
 interface Props {
+  label: string;
   headers: HeaderEntry[];
+  suggestions: string[];
+  /** Whether Chrome lets a rule append to the header with this trimmed name. */
+  canAppend: (name: string) => boolean;
   required: boolean;
   onChange: (headers: HeaderEntry[]) => void;
 }
@@ -21,13 +25,13 @@ const presetClassNames = { ...inputClassNames, dropdown: classes.presets };
 // Remove sends no value, so its row hides the value field (keeping what was typed, for switching back).
 const hasValue = (header: HeaderEntry) => header.operation !== 'remove';
 
-const nameError = (name: string, operation: HeaderEntry['operation']) => {
+const nameError = (name: string, operation: HeaderEntry['operation'], canAppend: (name: string) => boolean) => {
   if (name === '') return;
   if (!isValidHeaderName(name)) return 'Use letters, digits and - only';
-  if (operation === 'append' && !canAppendRequestHeader(name)) return "Chrome can't append to this header";
+  if (operation === 'append' && !canAppend(name)) return "Chrome can't append to this header";
 };
 
-export function HeaderList({ headers, required, onChange }: Props) {
+export function HeaderList({ label, headers, suggestions, canAppend, required, onChange }: Props) {
   const { ref, focus, focusAfterRender } = useFocusAfterRender();
   // Row index -> the header name its value was revealed for, so renaming or shifting rows hides it again.
   const [revealed, setRevealed] = useState<Record<number, string | undefined>>({});
@@ -67,7 +71,7 @@ export function HeaderList({ headers, required, onChange }: Props) {
 
   return (
     <FieldList
-      label="Request headers"
+      label={label}
       required={required}
       addLabel="Add header"
       addRef={ref('add')}
@@ -121,11 +125,11 @@ export function HeaderList({ headers, required, onChange }: Props) {
               placeholder="Header-Name"
               autoComplete="off"
               spellCheck={false}
-              data={COMMON_HEADERS}
+              data={suggestions}
               limit={8}
               openOnFocus={false}
               value={header.name}
-              error={nameError(name, header.operation)}
+              error={nameError(name, header.operation, canAppend)}
               onChange={(value) => update(i, { name: value })}
               // After the render, since naming a row User-Agent swaps in a value field with presets.
               onOptionSubmit={() => focusAfterRender(`value${i}`)}

@@ -37,6 +37,53 @@ describe('buildRules', () => {
     ]);
   });
 
+  it('sets response headers in the same rule, leaving out a list with nothing valid to set', () => {
+    const set = (header: string, value: string) => [{ header, operation: 'set', value }];
+    const groups: Group[] = [
+      group(['request.com'], [{ name: 'X-Token', value: 'r' }]),
+      {
+        ...group(['response.com'], [{ name: '', value: '' }]),
+        responseHeaders: [
+          { name: ' Access-Control-Allow-Origin ', value: '*' },
+          { name: 'Bad Name', value: 'x' },
+        ],
+      },
+      {
+        ...group(['both.com'], [{ name: 'X-Token', value: 'b' }]),
+        responseHeaders: [{ name: 'Set-Cookie', value: 'id=1' }],
+      },
+      { ...group(['neither.com'], []), responseHeaders: [{ name: 'X-Bad-Value', value: 'line\nbreak' }] },
+    ];
+    // Strict, so a left-out list can't be an undefined key either; Chrome rejects the whole update over an empty one.
+    expect(buildRules(groups, {}, resourceTypes).map((r) => r.action)).toStrictEqual([
+      { type: 'modifyHeaders', requestHeaders: set('X-Token', 'r') },
+      { type: 'modifyHeaders', responseHeaders: set('Access-Control-Allow-Origin', '*') },
+      { type: 'modifyHeaders', requestHeaders: set('X-Token', 'b'), responseHeaders: set('Set-Cookie', 'id=1') },
+    ]);
+  });
+
+  it('appends to any response header, and skips response headers switched off', () => {
+    const groups: Group[] = [
+      {
+        ...group(['a.com'], []),
+        responseHeaders: [
+          { name: 'Set-Cookie', value: 'b=2', operation: 'append' },
+          { name: 'X-Frame-Options', value: 'DENY', operation: 'remove' },
+          { name: 'X-Off', value: 'x', enabled: false },
+        ],
+      },
+    ];
+    expect(buildRules(groups, {}, resourceTypes).map((r) => r.action)).toStrictEqual([
+      {
+        type: 'modifyHeaders',
+        responseHeaders: [
+          { header: 'set-cookie', operation: 'append', value: 'b=2' },
+          { header: 'X-Frame-Options', operation: 'remove' },
+        ],
+      },
+    ]);
+  });
+
   it('skips headers switched off; headers saved before the switch existed stay on', () => {
     const groups = [
       group(['off.com'], [{ name: 'X-Token', value: 'off', enabled: false }]),

@@ -6,6 +6,7 @@ describe('isSecretHeader', () => {
     'Authorization',
     'proxy-authorization',
     'Cookie',
+    'Set-Cookie',
     'X-Api-Key',
     'apikey',
     'X_API_KEY',
@@ -17,10 +18,17 @@ describe('isSecretHeader', () => {
     'X-Hub-Signature',
   ])('hides %s', (name) => expect(isSecretHeader(name)).toBe(true));
 
-  it.each(['User-Agent', 'Accept-Language', 'X-Request-ID', 'X-Forwarded-For', 'Keep-Alive', 'X-Monkey', 'Content-Type', ''])(
-    'shows %j',
-    (name) => expect(isSecretHeader(name)).toBe(false),
-  );
+  it.each([
+    'User-Agent',
+    'Accept-Language',
+    'X-Request-ID',
+    'X-Forwarded-For',
+    'Keep-Alive',
+    'X-Monkey',
+    'Content-Type',
+    'Access-Control-Allow-Credentials',
+    '',
+  ])('shows %j', (name) => expect(isSecretHeader(name)).toBe(false));
 });
 
 describe('valuePresets', () => {

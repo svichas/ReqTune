@@ -3,7 +3,8 @@ import { ActionIcon, Collapse, Switch, Text, TextInput, Tooltip } from '@mantine
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
-import { isValidRequestHeader } from '../../shared/validation';
+import { canAppendRequestHeader, isValidRequestHeader, isValidResponseHeader } from '../../shared/validation';
+import { COMMON_HEADERS, COMMON_RESPONSE_HEADERS } from '../headers';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
 import { type GroupActions, GroupMenu } from './GroupMenu';
@@ -47,7 +48,9 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
-  const headers = group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length;
+  const headers =
+    group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length +
+    (group.responseHeaders ?? []).filter((h) => h.enabled !== false && isValidResponseHeader(h)).length;
   const inactive = group.enabled && (targets === 0 || headers === 0);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
@@ -120,9 +123,21 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             onTabIdsChange={onTabIdsChange}
           />
           <HeaderList
+            label="Request headers"
             headers={group.headers}
+            suggestions={COMMON_HEADERS}
+            canAppend={canAppendRequestHeader}
             required={group.enabled && headers === 0}
             onChange={(next) => onChange({ ...group, headers: next })}
+          />
+          {/* Required shows once, on the request list: a header in either list will do. */}
+          <HeaderList
+            label="Response headers"
+            headers={group.responseHeaders ?? []}
+            suggestions={COMMON_RESPONSE_HEADERS}
+            canAppend={() => true}
+            required={false}
+            onChange={(next) => onChange({ ...group, responseHeaders: next })}
           />
         </div>
       </Collapse>

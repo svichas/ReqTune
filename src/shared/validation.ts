@@ -37,15 +37,20 @@ export const isValidHeaderValue = (value: string): boolean => !/[\0\r\n]/.test(v
 /** Expects an already-trimmed name, in any case. */
 export const canAppendRequestHeader = (name: string): boolean => APPENDABLE.has(name.toLowerCase());
 
-/** Whether Chrome accepts the header in a rule. Remove sends no value, so it never needs a valid one. */
-export function isValidRequestHeader({ name, value, operation = 'set' }: HeaderEntry): boolean {
+/** Whether Chrome accepts the header in a request rule. Remove sends no value, so it never needs a valid one. */
+export const isValidRequestHeader = (header: HeaderEntry): boolean => isValidHeader(header, canAppendRequestHeader);
+
+/** The same for a response header: Chrome appends to any of those. */
+export const isValidResponseHeader = (header: HeaderEntry): boolean => isValidHeader(header, () => true);
+
+function isValidHeader({ name, value, operation = 'set' }: HeaderEntry, canAppend: (name: string) => boolean) {
   const header = name.trim();
   if (!isValidHeaderName(header)) return false;
   switch (operation) {
     case 'set':
       return isValidHeaderValue(value);
     case 'append':
-      return isValidHeaderValue(value) && canAppendRequestHeader(header);
+      return isValidHeaderValue(value) && canAppend(header);
     case 'remove':
       return true;
     default:

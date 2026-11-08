@@ -33,6 +33,25 @@ export const COMMON_HEADERS = [
   'X-Requested-With',
 ];
 
+/** Response headers people commonly set; offered as suggestions in the response header name field. */
+export const COMMON_RESPONSE_HEADERS = [
+  'Access-Control-Allow-Origin',
+  'Access-Control-Allow-Methods',
+  'Access-Control-Allow-Headers',
+  'Access-Control-Allow-Credentials',
+  'Access-Control-Expose-Headers',
+  'Cache-Control',
+  'Content-Security-Policy',
+  'Content-Type',
+  'Cross-Origin-Resource-Policy',
+  'Permissions-Policy',
+  'Referrer-Policy',
+  'Set-Cookie',
+  'Strict-Transport-Security',
+  'X-Content-Type-Options',
+  'X-Frame-Options',
+];
+
 // Picked in November 2026, in the reduced forms browsers send today.
 const USER_AGENTS = [
   {
@@ -76,4 +95,6 @@ export const valuePresets = (name: string) => (name.toLowerCase() === 'user-agen
 const SECRET = /auth|token|secret|passw|cookie|session|credential|api-?key|signature|jwt|bearer|csrf|xsrf|(^|[-_])key([-_]|$)/i;
 
 /** Whether a header's value stays hidden until the user reveals it. */
-export const isSecretHeader = (name: string): boolean => SECRET.test(name);
+export const isSecretHeader = (name: string): boolean =>
+  // CORS headers only mention credentials (Access-Control-Allow-Credentials: true), never carry them.
+  SECRET.test(name) && !/^access-control-/i.test(name);
