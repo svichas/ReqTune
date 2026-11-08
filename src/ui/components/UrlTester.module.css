@@ -1,0 +1,76 @@
+/* A card like the groups', above them. */
+.tester {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--rt-group-gap);
+  padding: 12px var(--rt-group-inset);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--rt-raised);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 4px;
+  overflow-wrap: anywhere;
+}
+
+/* What the group matched by stays whole while it fits: a pattern broken mid-token reads as two. */
+.head > :last-child {
+  flex: none;
+  max-width: 60%;
+}
+
+/* The field lists' filled container, read-only. */
+.headers {
+  margin: 0;
+  background: var(--rt-fill);
+  border-radius: var(--mantine-radius-md);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+.header + .header {
+  border-top: 1px solid var(--rt-line);
+}
+
+/* Values get the larger share, as in the full page's header rows; a mark that doesn't fit beside one drops below it. */
+.header dt {
+  flex: 2 1 0;
+}
+
+.header dd {
+  flex: 3 1 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+/* A change Chrome never makes, as a group higher in the list got to the header first, recedes. */
+.header[data-overridden] {
+  color: var(--mantine-color-dimmed);
+}

@@ -32,6 +32,7 @@
 - **Block requests** — switch a group to **Block** to cancel the requests it matches instead, and see how a page copes without a script, an API call or analytics.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
+- **URL tester** — paste a URL to see which groups would change its requests, through which pattern, and whose header wins where they overlap.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
 - **User-Agent presets** — a `User-Agent` row's value field suggests common Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
@@ -78,6 +79,8 @@ The button before each header's name picks what happens to that header: **Set** 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 
 A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
+
+To check what a request would get, click **Test a URL** (the globe icon at the top) and type or paste a full URL; in the side panel it starts with the page you're on. It lists every enabled group whose patterns match, the pattern that matched and what it would do: the request and response headers it changes, or that it blocks the request. Where groups change the same header it marks which change wins, as Chrome decides: below a group that sets or appends to a header, the others can only append to it, and below one that removes it, nothing applies. Only the URL is known, so a group with Filters shows them, and a change that wins for some kinds of request but not others reads **overridden for some requests**. A group whose Filters can't take this URL's requests isn't listed: a `ws://` or `wss://` URL is always a WebSocket request, which a method filter never takes. Groups that target tabs are listed apart, since they apply in their picked tabs whatever the URL. In those tabs, list order still counts: when one sets a header that a matching group lower in the list sets too, its value wins there, and the other shows **overridden in picked tabs**.
 
 ## Pattern syntax
 

@@ -1,12 +1,20 @@
 import { useRef, useState } from 'react';
 import { ActionIcon, Alert, Box, Button, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconAlertTriangle, IconExternalLink, IconPlayerPause, IconPlayerPlay, IconPlus } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconExternalLink,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconPlus,
+  IconWorldSearch,
+} from '@tabler/icons-react';
 import type { Group } from '../shared/types';
 import classes from './App.module.css';
 import { EmptyState } from './components/EmptyState';
 import { type FocusTarget, GroupCard } from './components/GroupCard';
 import { HelpPopover } from './components/HelpPopover';
 import { type Deleted, UndoBar } from './components/UndoBar';
+import { UrlTester } from './components/UrlTester';
 import { isFullPage, openFullPage } from './fullPage';
 import { useGroups } from './hooks/useGroups';
 import { useOpenTabs } from './hooks/useOpenTabs';
@@ -22,6 +30,7 @@ export function App() {
   const pauseRef = useRef<HTMLButtonElement>(null);
   const [focus, setFocus] = useState<{ id: string; target: FocusTarget }>();
   const [deleted, setDeleted] = useState<Deleted>();
+  const [testing, setTesting] = useState(false);
 
   const insertAt = (index: number, group: Group, target: FocusTarget) => {
     setFocus({ id: group.id, target });
@@ -65,6 +74,17 @@ export function App() {
             <Box component="img" src="/brand/logo-dark.svg" alt="ReqTune" className={classes.logo} lightHidden />
           </h1>
         )}
+        <Tooltip label="Test a URL">
+          <ActionIcon
+            size="lg"
+            variant={testing ? 'light' : 'subtle'}
+            aria-label="Test a URL"
+            aria-expanded={testing}
+            onClick={() => setTesting(!testing)}
+          >
+            <IconWorldSearch size={20} />
+          </ActionIcon>
+        </Tooltip>
         {/* Tinted while paused: the banner scrolls away with the list, and this bar never does. */}
         <Tooltip label={pauseLabel}>
           <ActionIcon
@@ -114,6 +134,16 @@ export function App() {
             </Alert>
           )}
         </div>
+
+        {testing && tabs && (
+          <UrlTester
+            groups={groups}
+            tabs={tabs}
+            tabSelections={tabSelections}
+            paused={paused}
+            defaultUrl={isFullPage ? undefined : tabs.find((tab) => tab.current && /^https?:/.test(tab.url ?? ''))?.url}
+          />
+        )}
 
         {syncError && (
           <Alert
