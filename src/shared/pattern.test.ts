@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { patternToRegex } from './pattern';
+import { canOverlap, patternToRegex } from './pattern';
 
 const cases: [pattern: string, matches: string[], misses: string[]][] = [
   // Examples from the doc comment
@@ -114,6 +114,10 @@ const invalid = [
   'regex:(?<!/v1)/users',
   'regex:/(v[0-9])/\\1/',
   'regex:bücher\\.de',
+  // Chrome lowercases a regex before matching, so these would turn into \d, \s and \a.
+  'regex:/v\\D',
+  'regex:a\\Sb',
+  'regex:\\Ahttps://',
 ];
 
 describe('patternToRegex', () => {
@@ -135,5 +139,37 @@ describe('patternToRegex', () => {
     // Escaped, these are literal text rather than a lookahead and a backreference.
     expect(patternToRegex('regex:/a\\(?=b')).toBe('/a\\(?=b');
     expect(patternToRegex('regex:/a\\\\1')).toBe('/a\\\\1');
+    expect(patternToRegex('regex:/a\\\\D')).toBe('/a\\\\D');
+  });
+});
+
+describe('canOverlap', () => {
+  it.each([
+    ['example.com', '/api/*'],
+    ['example.com', 'EXAMPLE.com/search'],
+    ['*.example.com', 'example.com'],
+    ['*.example.com', 'api.example.com'],
+    ['api.*.example.com', '*.eu.example.com'],
+    ['localhost:3000', '*:3000'],
+    ['https://example.com', 'example.com:*'],
+    ['example.com/a/*', 'example.com/*/b'],
+    ['example.com/search?q=*', 'example.com/search'],
+    ['example.com', 'regex:anything'],
+  ])('%s meets %s', (a, b) => {
+    expect(canOverlap(a, b)).toBe(true);
+    expect(canOverlap(b, a)).toBe(true);
+  });
+
+  it.each([
+    ['a.com', 'b.com'],
+    ['*.staging.example.com/api/*', '*.preview.example.com/api/*'],
+    ['example.com', 'example.org'],
+    ['localhost:3000', 'localhost:3001'],
+    ['https://example.com', 'ws://example.com'],
+    ['example.com/a', 'example.com/b'],
+    ['/graphql', '/api/*'],
+  ])('%s never meets %s', (a, b) => {
+    expect(canOverlap(a, b)).toBe(false);
+    expect(canOverlap(b, a)).toBe(false);
   });
 });

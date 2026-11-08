@@ -41,7 +41,8 @@ export function HelpPopover() {
         </Text>
         <Text size="xs" c="dimmed" mt="xs">
           Start with <Code>regex:</Code> for a regular expression instead. It matches anywhere in the URL, so pin the
-          host, as in <Code>^https://api\.example\.com/</Code>. Chrome uses RE2: no lookarounds or backreferences.
+          host, as in <Code>^https://api\.example\.com/</Code>. Chrome uses RE2: no lookarounds, backreferences or
+          escapes like <Code>\D</Code>.
         </Text>
         <Divider my="md" />
         <Text size="xs" className={classes.fact}>
