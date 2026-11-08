@@ -1,7 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Badge, Text, TextInput } from '@mantine/core';
-import { type GroupMatch, matchGroups } from '../../shared/match';
+import { type GroupMatch, type HeaderMatch, matchGroups } from '../../shared/match';
 import type { Group, TabSelections } from '../../shared/types';
+import { filterSummary } from '../filters';
 import { isSecretHeader } from '../headers';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import fieldClasses from './FieldList.module.css';
@@ -64,8 +65,8 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
 
       {!!result?.byPattern.length && (
         <ul aria-label="Matching groups" className={classes.list}>
-          {result.byPattern.map(({ group, headers, pattern }) => (
-            <Match key={group.id} group={group} headers={headers}>
+          {result.byPattern.map(({ pattern, ...match }) => (
+            <Match key={match.group.id} {...match}>
               <Text span size="xs" ff="monospace" c="dimmed">
                 {pattern}
               </Text>
@@ -80,10 +81,10 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
             In picked tabs, whatever the URL
           </Text>
           <ul aria-label="Groups that target tabs" className={classes.list}>
-            {result.byTabs.map(({ group, headers }) => (
-              <Match key={group.id} group={group} headers={headers}>
+            {result.byTabs.map((match) => (
+              <Match key={match.group.id} {...match}>
                 <Text span size="xs" c="dimmed">
-                  {count(pickedTabs(group), 'tab')}
+                  {count(pickedTabs(match.group), 'tab')}
                 </Text>
               </Match>
             ))}
@@ -94,8 +95,9 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
   );
 }
 
-/** A group's name, what it matched by, and the headers it sets; values of token-like headers stay hidden. */
-function Match({ group, headers, children }: GroupMatch & { children: ReactNode }) {
+/** A group's name, what it matched by, and what it does to the request; values of token-like headers stay hidden. */
+function Match({ group, headers, responseHeaders, children }: GroupMatch & { children: ReactNode }) {
+  const filters = filterSummary(group);
   return (
     <li>
       <div className={classes.head}>
@@ -104,37 +106,74 @@ function Match({ group, headers, children }: GroupMatch & { children: ReactNode 
         </Text>
         {children}
       </div>
-      <dl className={classes.headers}>
-        {headers.map(({ name, value, wins, overriddenInTabs }, i) => (
-          <div key={i} className={classes.header} data-overridden={wins === false || undefined}>
-            <dt>{name}</dt>
-            <dd>
-              {isSecretHeader(name) ? (
-                <span role="img" aria-label="Hidden value">
-                  ••••••••
-                </span>
-              ) : (
-                value
-              )}
-              {wins && (
-                <Badge size="sm" radius="sm" variant="light" ff="text">
-                  wins
-                </Badge>
-              )}
-              {wins === false && (
-                <Text span size="xs" ff="text">
-                  overridden
-                </Text>
-              )}
-              {overriddenInTabs && (
-                <Text span size="xs" ff="text" c="dimmed">
-                  overridden in picked tabs
-                </Text>
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {/* Only the URL is known, so the group is listed as if the request were one its filters take. */}
+      {filters && (
+        <Text size="xs" c="dimmed" px={2} pb={4}>
+          Only {filters}
+        </Text>
+      )}
+      {group.action === 'block' ? (
+        <Text size="xs" c="orange" px={2}>
+          Blocks the request
+        </Text>
+      ) : (
+        <>
+          {!!headers.length && <Headers headers={headers} />}
+          {!!responseHeaders.length && (
+            <>
+              <Text size="xs" c="dimmed" px={2} pt={headers.length ? 6 : 0} pb={4}>
+                Response headers
+              </Text>
+              <Headers headers={responseHeaders} />
+            </>
+          )}
+        </>
+      )}
     </li>
+  );
+}
+
+function Headers({ headers }: { headers: HeaderMatch[] }) {
+  return (
+    <dl className={classes.headers}>
+      {headers.map(({ name, value, operation, wins, overriddenInTabs }, i) => (
+        <div key={i} className={classes.header} data-overridden={wins === false || undefined}>
+          <dt>{name}</dt>
+          <dd>
+            {operation === 'remove' ? (
+              <Text span size="xs" ff="text" fs="italic">
+                removed
+              </Text>
+            ) : (
+              <span>
+                {operation === 'append' && '+ '}
+                {isSecretHeader(name) ? (
+                  <span role="img" aria-label="Hidden value">
+                    ••••••••
+                  </span>
+                ) : (
+                  value
+                )}
+              </span>
+            )}
+            {wins && (
+              <Badge size="sm" radius="sm" variant="light" ff="text">
+                wins
+              </Badge>
+            )}
+            {wins === false && (
+              <Text span size="xs" ff="text">
+                overridden
+              </Text>
+            )}
+            {overriddenInTabs && (
+              <Text span size="xs" ff="text" c="dimmed">
+                overridden in picked tabs
+              </Text>
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

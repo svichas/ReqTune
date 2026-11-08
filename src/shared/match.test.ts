@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { matchGroups } from './match';
-import type { Group } from './types';
+import type { Group, HeaderEntry } from './types';
 
 const group = (id: string, patterns: string[], headers: [string, string][], extra: Partial<Group> = {}): Group => ({
   id,
@@ -32,8 +32,8 @@ describe('matchGroups', () => {
     // Matched like Chrome: on the canonical URL, without its default port, and case-insensitively.
     expect(matchGroups(groups, ' HTTPS://API.Example.com:443/v1/users?id=1 ')).toEqual({
       byPattern: [
-        { group: groups[0], pattern: '*.example.com', headers: [{ name: 'X-Env', value: 'staging' }] },
-        { group: groups[4], pattern: '/V1/*', headers: [{ name: 'X-Debug', value: '1' }] },
+        { group: groups[0], pattern: '*.example.com', headers: [{ name: 'X-Env', value: 'staging' }], responseHeaders: [] },
+        { group: groups[4], pattern: '/V1/*', headers: [{ name: 'X-Debug', value: '1' }], responseHeaders: [] },
       ],
       byTabs: [],
     });
@@ -62,10 +62,10 @@ describe('matchGroups', () => {
     ];
     expect(matchGroups(groups, 'https://example.com/api/x')).toEqual({
       byPattern: [
-        { group: groups[1], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', overriddenInTabs: true }] },
-        { group: groups[2], pattern: '/api/*', headers: [{ name: 'x-env', value: 'b', wins: false }] },
+        { group: groups[1], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', overriddenInTabs: true }], responseHeaders: [] },
+        { group: groups[2], pattern: '/api/*', headers: [{ name: 'x-env', value: 'b', wins: false }], responseHeaders: [] },
       ],
-      byTabs: [{ group: groups[0], headers: [{ name: 'X-Env', value: 'tab', wins: true }] }],
+      byTabs: [{ group: groups[0], headers: [{ name: 'X-Env', value: 'tab', wins: true }], responseHeaders: [] }],
     });
   });
 
@@ -77,10 +77,10 @@ describe('matchGroups', () => {
       group('more-tabs', [], [['X-Tab', '2']], { target: 'tabs' }),
     ];
     expect(matchGroups(groups, 'https://example.com/')).toEqual({
-      byPattern: [{ group: groups[0], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', wins: true }] }],
+      byPattern: [{ group: groups[0], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a', wins: true }], responseHeaders: [] }],
       byTabs: [
-        { group: groups[1], headers: [{ name: 'x-env', value: 'tab', wins: false }, { name: 'X-Tab', value: '1' }] },
-        { group: groups[2], headers: [{ name: 'X-Tab', value: '2' }] },
+        { group: groups[1], headers: [{ name: 'x-env', value: 'tab', wins: false }, { name: 'X-Tab', value: '1' }], responseHeaders: [] },
+        { group: groups[2], headers: [{ name: 'X-Tab', value: '2' }], responseHeaders: [] },
       ],
     });
   });
@@ -93,8 +93,90 @@ describe('matchGroups', () => {
       group('patterns', ['example.com'], [['X-Token', 't']], { target: 'patterns' }),
     ];
     expect(matchGroups(groups, 'wss://example.com/socket')).toEqual({
-      byPattern: [{ group: groups[3], pattern: 'example.com', headers: [{ name: 'X-Token', value: 't' }] }],
-      byTabs: [{ group: groups[0], headers: [{ name: 'X-Tab', value: '1' }] }],
+      byPattern: [{ group: groups[3], pattern: 'example.com', headers: [{ name: 'X-Token', value: 't' }], responseHeaders: [] }],
+      byTabs: [{ group: groups[0], headers: [{ name: 'X-Tab', value: '1' }], responseHeaders: [] }],
+    });
+  });
+
+  it('follows Chrome on operations: below a set or an append only appends still apply, and below a remove nothing', () => {
+    const header = (name: string, value: string, operation: HeaderEntry['operation']) => ({ name, value, operation });
+    const groups: Group[] = [
+      { ...group('a', ['example.com'], []), headers: [header('Cookie', 'a=1', 'set'), header('Accept-Language', '', 'remove')] },
+      {
+        ...group('b', ['example.com'], []),
+        headers: [header('cookie', 'b=2', 'append'), header('Cookie', 'c=3', 'set'), header('accept-language', 'el', 'append')],
+      },
+      { ...group('c', ['example.com'], []), headers: [header('Accept', 'x', 'append'), header('accept', 'y', 'remove')] },
+    ];
+    expect(matchGroups(groups, 'https://example.com/')?.byPattern.map((match) => match.headers)).toEqual([
+      [
+        { name: 'Cookie', value: 'a=1', operation: 'set', wins: true },
+        { name: 'Accept-Language', value: '', operation: 'remove', wins: true },
+      ],
+      [
+        { name: 'cookie', value: 'b=2', operation: 'append' },
+        { name: 'Cookie', value: 'c=3', operation: 'set', wins: false },
+        { name: 'accept-language', value: 'el', operation: 'append', wins: false },
+      ],
+      [
+        { name: 'Accept', value: 'x', operation: 'append', wins: true },
+        { name: 'accept', value: 'y', operation: 'remove', wins: false },
+      ],
+    ]);
+  });
+
+  it('leaves out switched-off headers and appends Chrome refuses, and weighs response headers apart', () => {
+    const groups: Group[] = [
+      {
+        ...group('a', ['example.com'], []),
+        headers: [
+          { name: 'X-Off', value: '1', enabled: false },
+          { name: 'X-Custom', value: '1', operation: 'append' },
+          { name: 'X-Env', value: 'a' },
+        ],
+        responseHeaders: [{ name: 'X-Custom', value: '2', operation: 'append' }],
+      },
+      { ...group('b', ['example.com'], []), responseHeaders: [{ name: 'X-Env', value: 'b' }] },
+    ];
+    expect(matchGroups(groups, 'https://example.com/')?.byPattern).toEqual([
+      {
+        group: groups[0],
+        pattern: 'example.com',
+        headers: [{ name: 'X-Env', value: 'a' }],
+        responseHeaders: [{ name: 'X-Custom', value: '2', operation: 'append' }],
+      },
+      { group: groups[1], pattern: 'example.com', headers: [], responseHeaders: [{ name: 'X-Env', value: 'b' }] },
+    ]);
+  });
+
+  it('lists a blocking group without its headers, which neither win nor lose against others', () => {
+    const groups = [
+      group('block', ['example.com'], [['X-Env', 'blocked']], { action: 'block' }),
+      group('block-empty', ['example.com'], [], { action: 'block' }),
+      group('a', ['example.com'], [['X-Env', 'a']]),
+    ];
+    expect(matchGroups(groups, 'https://example.com/')?.byPattern).toEqual([
+      { group: groups[0], pattern: 'example.com', headers: [], responseHeaders: [] },
+      { group: groups[1], pattern: 'example.com', headers: [], responseHeaders: [] },
+      { group: groups[2], pattern: 'example.com', headers: [{ name: 'X-Env', value: 'a' }], responseHeaders: [] },
+    ]);
+  });
+
+  it("doesn't mark a URL group's append overridden in the tabs of a tabs group above that sets the header", () => {
+    const groups: Group[] = [
+      group('tabs', [], [['Cookie', 'tab=1']], { target: 'tabs' }),
+      { ...group('a', ['example.com'], []), headers: [{ name: 'Cookie', value: 'a=1', operation: 'append' }] },
+    ];
+    expect(matchGroups(groups, 'https://example.com/')).toEqual({
+      byPattern: [
+        {
+          group: groups[1],
+          pattern: 'example.com',
+          headers: [{ name: 'Cookie', value: 'a=1', operation: 'append' }],
+          responseHeaders: [],
+        },
+      ],
+      byTabs: [{ group: groups[0], headers: [{ name: 'Cookie', value: 'tab=1' }], responseHeaders: [] }],
     });
   });
 });
