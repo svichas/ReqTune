@@ -12,8 +12,9 @@ function rawRegex(source: string): string | null {
   // Chrome needs ASCII, and RE2 has no lookarounds or backreferences. Other escapes are dropped before looking, so a
   // literal `\(?=` or `\\1` passes; the worker's isRegexSupported check catches whatever else RE2 rejects.
   if (!source || /[^\x00-\x7f]/.test(source) || /\(\?<?[=!]|\\[1-9]/.test(source.replace(/\\[^1-9]/g, ''))) return null;
-  // Chrome lowercases a case-insensitive regex before matching, which turns `\D` into `\d`, its opposite.
-  if (/\\[A-Z]/.test(source.replace(/\\\\/g, ''))) return null;
+  // Chrome lowercases a case-insensitive regex before matching, which turns `\D` into `\d`, its opposite, and `\pL`
+  // into `\pl`, an error.
+  if (/\\(p\{?)?[A-Z]/.test(source.replace(/\\\\/g, ''))) return null;
   try {
     new RegExp(source);
     return source;
@@ -54,19 +55,24 @@ function globsMeet(a: string, b: string): boolean {
 
 /**
  * Whether some URL could match both patterns. Errs towards yes: always for a `regex:` or invalid one, and a host `*` is
- * taken to cross any character, though it never crosses a `/`.
+ * taken to cross any character, though it never crosses a `/`. It does cross a `:`, so with the port left open it can
+ * run on into it: `web*2` matches web1:8082.
  */
 export function canOverlap(a: string, b: string): boolean {
   const [p, q] = [wildcardParts(a), wildcardParts(b)];
   if (!p || !q) return true;
-  // `*.example.com` also matches example.com itself; a path-only pattern takes any host.
-  const hosts = (host: string) => (host.startsWith('*.') ? [host, host.slice(2)] : [host || '*']);
+  // `*.example.com` also matches example.com itself; a path-only pattern takes any host. With the port open, a host
+  // ending in `*` and digits can end anywhere, as its `*` can take `1:808` of web1:8082.
+  const hosts = ({ host, port }: { host: string; port: string }) =>
+    (host.startsWith('*.') ? [host, host.slice(2)] : [host || '*']).flatMap((h) =>
+      port === '*' ? [h, h.replace(/\*[\d*]*$/, '*')] : [h],
+    );
   // Whatever follows the path can be anything, and a path `*` can run on into the query: `/a*b` matches `/a?x=b`.
   const rest = (path = '') => `${path}*`;
   return (
     (p.scheme === '*' || q.scheme === '*' || p.scheme.toLowerCase() === q.scheme.toLowerCase()) &&
     (p.port === '*' || q.port === '*' || p.port === q.port) &&
-    hosts(p.host).some((x) => hosts(q.host).some((y) => globsMeet(x, y))) &&
+    hosts(p).some((x) => hosts(q).some((y) => globsMeet(x, y))) &&
     globsMeet(rest(p.path), rest(q.path))
   );
 }

@@ -163,7 +163,7 @@ export function App() {
             variant="light"
             color="red"
             icon={<IconAlertTriangle size={16} />}
-            title="Some rules aren't active"
+            title="Some rules don't apply as written"
             classNames={{ message: classes.alertMessage }}
           >
             {syncError}

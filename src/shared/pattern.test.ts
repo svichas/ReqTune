@@ -118,6 +118,8 @@ const invalid = [
   'regex:/v\\D',
   'regex:a\\Sb',
   'regex:\\Ahttps://',
+  'regex:\\pL',
+  'regex:\\p{Greek}',
 ];
 
 describe('patternToRegex', () => {
@@ -157,6 +159,9 @@ describe('canOverlap', () => {
     // Both match https://example.com/a?x=b: a path `*` runs on into the query.
     ['example.com/a*b', 'example.com/a'],
     ['example.com', 'regex:anything'],
+    // A host `*` can run on into an open port: both match http://web1:8082/, and the second http://example.com:3000/.
+    ['web*1', 'web*2'],
+    ['example.com', '*0'],
   ])('%s meets %s', (a, b) => {
     expect(canOverlap(a, b)).toBe(true);
     expect(canOverlap(b, a)).toBe(true);

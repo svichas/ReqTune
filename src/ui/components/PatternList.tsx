@@ -56,7 +56,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
     const isRegex = isRegexPattern(pattern);
     if (pattern.trim() !== '' && patternToRegex(pattern) === null) {
       return isRegex
-        ? 'Invalid regex; Chrome takes ASCII-only RE2, with no lookarounds, backreferences or escapes like \\D'
+        ? 'Invalid regex; Chrome takes ASCII RE2 with no lookarounds or backreferences, and lowercases it, so no \\D'
         : 'Invalid pattern; see Help for the syntax';
     }
     if (unsupported.includes(pattern)) {

@@ -104,7 +104,7 @@ To back up or share groups, pick **Export all groups** from the ⋮ menu at the 
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
 - A pattern applies once you leave its field or press Enter, as a half-typed one like `*` or `regex:^https://` would match every site.
-- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII. It also lowercases the regex before matching, so escapes with a capital letter aren't allowed: write `[^\d]`, `[^\s]` or `[^\w]` for `\D`, `\S` or `\W`.
+- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII. It also lowercases the regex before matching, so escapes with a capital letter aren't allowed (write `[^\d]`, `[^\s]` or `[^\w]` for `\D`, `\S` or `\W`), and a range like `[A-z]` becomes `[a-z]`.
 - Chrome limits how complex each pattern can be. Very long patterns (roughly 70+ characters, or many `*`) are flagged in the panel and skipped, and every other rule keeps working.
 
 ## How it works

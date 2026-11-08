@@ -35,11 +35,11 @@ async function applyRules(): Promise<void> {
     const notes = [
       skipped && `${skipped} pattern(s) Chrome can't use were skipped; see below.`,
       repeats.length &&
-        `In ${names}, a URL that two patterns match gets each append twice: ` +
+        `In ${names}, a URL that two of its patterns match may get each append twice: ` +
           "Chrome can't take those patterns as one regex.",
       overLimit &&
         `Chrome takes at most ${dnr.MAX_NUMBER_OF_REGEX_RULES} rules for patterns, ` +
-          `so the ${overLimit} lowest were left out.`,
+          `so the ${overLimit} lowest in the list were left out.`,
     ];
     await setSyncError(notes.filter(Boolean).join(' ') || undefined);
   } catch (error) {

@@ -44,6 +44,24 @@ function combine(patterns: string[]): string {
   return regexes.map((regex) => `(?:${regex})`).join('|');
 }
 
+// One sync builds the rules three times over; overlap checks are worth doing once, in a big group.
+const clustered = new WeakMap<Group, { key: string; clusters: string[][] }>();
+
+/** The patterns in groups that can meet, directly or through others. */
+function clusters(group: Group, patterns: string[]): string[][] {
+  const key = patterns.join('\n');
+  const cached = clustered.get(group);
+  if (cached?.key === key) return cached.clusters;
+  const result: string[][] = [];
+  for (const pattern of patterns) {
+    const meeting = result.filter((cluster) => cluster.some((other) => canOverlap(pattern, other)));
+    result.push([...meeting.flat(), pattern]);
+    for (const cluster of meeting) result.splice(result.indexOf(cluster), 1);
+  }
+  clustered.set(group, { key, clusters: result });
+  return result;
+}
+
 /**
  * The regexes of a group's URL rules. Without `refused` (regexes Chrome won't take), one per valid pattern, to check
  * them one by one. With it, one per pattern Chrome takes, except that in a group that appends, patterns that can match
@@ -56,15 +74,8 @@ export function ruleRegexes(group: Group, refused?: ReadonlySet<string>) {
   });
   const regex = (pattern: string) => patternToRegex(pattern)!;
   if (!refused || !appends(group)) return { regexes: patterns.map(regex), repeats: false };
-  // Patterns that can meet, directly or through others, go together.
-  const clusters: string[][] = [];
-  for (const pattern of patterns) {
-    const meeting = clusters.filter((cluster) => cluster.some((other) => canOverlap(pattern, other)));
-    clusters.push([...meeting.flat(), pattern]);
-    for (const cluster of meeting) clusters.splice(clusters.indexOf(cluster), 1);
-  }
   let repeats = false;
-  const regexes = clusters.flatMap((cluster) => {
+  const regexes = clusters(group, patterns).flatMap((cluster) => {
     if (cluster.length === 1) return [regex(cluster[0])];
     const combined = combine(cluster);
     if (!refused.has(combined)) return [combined];

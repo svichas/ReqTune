@@ -341,12 +341,12 @@
       <ol class="flow">
         <li class="card"><b>Side panel</b><span>You edit groups, in React and Mantine</span></li>
         <li class="card"><b><code>chrome.storage<wbr>.local</code></b><span>Groups are saved on your device</span></li>
-        <li class="card"><b>Service worker</b><span>Turns each pattern into a rule</span></li>
+        <li class="card"><b>Service worker</b><span>Turns your patterns into rules</span></li>
         <li class="card"><b><code>declarative<wbr>NetRequest</code></b><span><code>modifyHeaders</code> rules, swapped atomically</span></li>
         <li class="card"><b>Matching requests</b><span>Chrome sets your headers</span></li>
       </ol>
       <dl class="facts">
-        <div><dt>Compiled, not interpreted</dt><dd>Each URL pattern compiles to an anchored regex in its own rule, and group order becomes rule priority.</dd></div>
+        <div><dt>Compiled, not interpreted</dt><dd>Each URL pattern compiles to an anchored regex, and group order becomes rule priority. In a group that appends to a header, patterns that can match one URL share a rule, so each append happens once.</dd></div>
         <div><dt>Atomic updates</dt><dd>Rule sets are swapped in one step, so edits never leave them half-applied. Rules cover every resource type, page navigations included.</dd></div>
         <div><dt>Tabs, too</dt><dd>A group that targets tabs becomes a session rule with a <code>tabIds</code> condition and no URL filter. Tab picks last until Chrome restarts.</dd></div>
       </dl>
