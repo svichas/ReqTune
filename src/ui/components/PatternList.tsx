@@ -85,7 +85,8 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
       onAdd={() => insert(patterns.length)}
     >
       {shown.map((pattern, i) => (
-        <div key={i} className={classes.row}>
+        // Saved when focus leaves the row, not the field: reaching its ✕ would otherwise save the text being removed.
+        <div key={i} className={classes.row} onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && commit()}>
           <TextInput
             ref={ref(String(i))}
             variant="unstyled"
@@ -98,7 +99,6 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
             value={pattern}
             error={errorFor(pattern)}
             onChange={(e) => setDraft({ i, value: e.currentTarget.value })}
-            onBlur={commit}
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') insert(i + 1);
