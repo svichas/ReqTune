@@ -3,9 +3,11 @@ import { ActionIcon, Collapse, SegmentedControl, Switch, Text, TextInput, Toolti
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
+import { canAppendRequestHeader, isValidRequestHeader, isValidResponseHeader } from '../../shared/validation';
+import { COMMON_HEADERS, COMMON_RESPONSE_HEADERS } from '../headers';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
+import { GroupFilters } from './GroupFilters';
 import { type GroupActions, GroupMenu } from './GroupMenu';
 import { GroupTarget } from './GroupTarget';
 import { HeaderList } from './HeaderList';
@@ -42,14 +44,20 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   }, []);
 
   // Same filters as the worker's buildRules: without a usable target (a valid pattern, or a picked tab that is still
-  // open) and, unless it blocks, a valid header, the group does nothing. Closed tabs make no more requests.
+  // open) and, unless it blocks, a valid header that's switched on, the group does nothing. Closed tabs make no more
+  // requests.
   const byTabs = group.target === 'tabs';
   const blocks = group.action === 'block';
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
-  const headers = group.headers.filter((h) => isValidHeaderName(h.name.trim()) && isValidHeaderValue(h.value)).length;
-  const inactive = group.enabled && (targets === 0 || (!blocks && headers === 0));
+  const headers =
+    group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length +
+    (group.responseHeaders ?? []).filter((h) => h.enabled !== false && isValidResponseHeader(h)).length;
+  // Chrome never matches a WebSocket request by method, so a WebSocket-only group with methods picked sends nothing.
+  const types = group.resourceTypes ?? [];
+  const noRequests = !!group.requestMethods?.length && types.length > 0 && types.every((type) => type === 'websocket');
+  const inactive = group.enabled && (targets === 0 || (!blocks && headers === 0) || noRequests);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
   const onHeaderClick = (e: MouseEvent<HTMLElement>) => {
@@ -138,12 +146,27 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
               Matching requests are cancelled before they're sent.
             </Text>
           ) : (
-            <HeaderList
-              headers={group.headers}
-              required={group.enabled && headers === 0}
-              onChange={(next) => onChange({ ...group, headers: next })}
-            />
+            <>
+              <HeaderList
+                label="Request headers"
+                headers={group.headers}
+                suggestions={COMMON_HEADERS}
+                canAppend={canAppendRequestHeader}
+                required={group.enabled && headers === 0}
+                onChange={(next) => onChange({ ...group, headers: next })}
+              />
+              {/* Required shows once, on the request list: a header in either list will do. */}
+              <HeaderList
+                label="Response headers"
+                headers={group.responseHeaders ?? []}
+                suggestions={COMMON_RESPONSE_HEADERS}
+                canAppend={() => true}
+                required={false}
+                onChange={(next) => onChange({ ...group, responseHeaders: next })}
+              />
+            </>
           )}
+          <GroupFilters group={group} onChange={onChange} />
         </div>
       </Collapse>
     </div>

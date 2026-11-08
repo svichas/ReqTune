@@ -105,6 +105,15 @@ const invalid = [
   ':3000',
   'example.com@evil.com',
   'bücher.de',
+  // Regexes Chrome would refuse: empty, bad syntax, lookarounds, backreferences, non-ASCII
+  'regex:',
+  'regex:^https://(api',
+  'regex:/v1/(?=users)',
+  'regex:/v1/(?!users)',
+  'regex:(?<=/v1)/users',
+  'regex:(?<!/v1)/users',
+  'regex:/(v[0-9])/\\1/',
+  'regex:bücher\\.de',
 ];
 
 describe('patternToRegex', () => {
@@ -118,5 +127,13 @@ describe('patternToRegex', () => {
 
   it.each(invalid)('rejects %j', (pattern) => {
     expect(patternToRegex(pattern)).toBeNull();
+  });
+
+  it('passes a regex: pattern on as written, trimmed', () => {
+    const source = '^https://(api|admin)\\.example\\.com/v[0-9]+/';
+    expect(patternToRegex(` regex: ${source}\t`)).toBe(source);
+    // Escaped, these are literal text rather than a lookahead and a backreference.
+    expect(patternToRegex('regex:/a\\(?=b')).toBe('/a\\(?=b');
+    expect(patternToRegex('regex:/a\\\\1')).toBe('/a\\\\1');
   });
 });

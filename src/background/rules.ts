@@ -1,6 +1,17 @@
 import { patternToRegex } from '../shared/pattern';
-import type { Group, TabSelections } from '../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../shared/validation';
+import type { Group, HeaderEntry, TabSelections } from '../shared/types';
+import { isValidRequestHeader, isValidResponseHeader } from '../shared/validation';
+
+/** The entries that are on and valid, as Chrome header operations. */
+const headerInfos = (headers: HeaderEntry[], isValid: (header: HeaderEntry) => boolean) =>
+  headers
+    .filter((h) => h.enabled !== false && isValid(h))
+    .map(({ name, value, operation = 'set' }) => {
+      const header = name.trim();
+      // Chrome rejects a value on remove, and documents its append allowlist as lowercase and case-sensitive.
+      if (operation === 'remove') return { header, operation };
+      return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
+    });
 
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
@@ -12,18 +23,34 @@ export function buildRules(
   const rules: chrome.declarativeNetRequest.Rule[] = [];
   groups.forEach((group, index) => {
     if (!group.enabled) return;
-    const requestHeaders = group.headers
-      .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
-      .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
+    const requestHeaders = headerInfos(group.headers, isValidRequestHeader);
+    const responseHeaders = headerInfos(group.responseHeaders ?? [], isValidResponseHeader);
     const block = group.action === 'block';
-    if (!block && !requestHeaders.length) return;
+    if (!block && !requestHeaders.length && !responseHeaders.length) return;
+    // Picked filters narrow the rule; none leaves every request, as before (Chrome rejects empty lists). Values
+    // Chrome doesn't know are dropped: one would fail the whole update.
+    const types = resourceTypes.filter((type) => group.resourceTypes?.includes(type));
+    const methods = (['connect', 'delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'other'] as const).filter(
+      (method) => group.requestMethods?.includes(method),
+    );
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
       // earlier groups win. Blocks are checked before any header is set, so a block wins wherever its group sits.
       priority: groups.length - index,
-      action: block ? { type: 'block' } : { type: 'modifyHeaders', requestHeaders },
-      condition: { ...condition, resourceTypes },
+      // Chrome rejects an empty list, so whichever of the two has nothing to change is left out.
+      action: block
+        ? { type: 'block' }
+        : {
+            type: 'modifyHeaders',
+            ...(requestHeaders.length && { requestHeaders }),
+            ...(responseHeaders.length && { responseHeaders }),
+          },
+      condition: {
+        ...condition,
+        resourceTypes: types.length ? types : resourceTypes,
+        ...(methods.length ? { requestMethods: methods } : {}),
+      },
     });
     if (group.target === 'tabs') {
       // No URL filter: every request from the picked tabs. With none picked the group applies nowhere, and Chrome
