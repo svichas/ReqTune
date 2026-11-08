@@ -1,12 +1,17 @@
 import { patternToRegex } from '../shared/pattern';
 import type { Group, HeaderEntry, TabSelections } from '../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../shared/validation';
+import { isValidRequestHeader, isValidResponseHeader } from '../shared/validation';
 
-/** The valid entries, as Chrome `set` operations. */
-const headersToSet = (headers: HeaderEntry[]) =>
+/** The entries that are on and valid, as Chrome header operations. */
+const headerInfos = (headers: HeaderEntry[], isValid: (header: HeaderEntry) => boolean) =>
   headers
-    .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
-    .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
+    .filter((h) => h.enabled !== false && isValid(h))
+    .map(({ name, value, operation = 'set' }) => {
+      const header = name.trim();
+      // Chrome rejects a value on remove, and documents its append allowlist as lowercase and case-sensitive.
+      if (operation === 'remove') return { header, operation };
+      return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
+    });
 
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
@@ -18,15 +23,15 @@ export function buildRules(
   const rules: chrome.declarativeNetRequest.Rule[] = [];
   groups.forEach((group, index) => {
     if (!group.enabled) return;
-    const requestHeaders = headersToSet(group.headers);
-    const responseHeaders = headersToSet(group.responseHeaders ?? []);
+    const requestHeaders = headerInfos(group.headers, isValidRequestHeader);
+    const responseHeaders = headerInfos(group.responseHeaders ?? [], isValidResponseHeader);
     if (!requestHeaders.length && !responseHeaders.length) return;
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
       // earlier groups win.
       priority: groups.length - index,
-      // Chrome rejects an empty list, so whichever of the two has nothing to set is left out.
+      // Chrome rejects an empty list, so whichever of the two has nothing to change is left out.
       action: {
         type: 'modifyHeaders',
         ...(requestHeaders.length && { requestHeaders }),

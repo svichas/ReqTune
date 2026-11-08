@@ -3,7 +3,7 @@ import { ActionIcon, Collapse, Switch, Text, TextInput, Tooltip } from '@mantine
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
+import { canAppendRequestHeader, isValidRequestHeader, isValidResponseHeader } from '../../shared/validation';
 import { COMMON_HEADERS, COMMON_RESPONSE_HEADERS } from '../headers';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
@@ -43,14 +43,14 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   }, []);
 
   // Same filters as the worker's buildRules: without a usable target (a valid pattern, or a picked tab that is still
-  // open) and a valid header the group sends nothing. Closed tabs make no more requests.
+  // open) and a valid header that's switched on, the group sends nothing. Closed tabs make no more requests.
   const byTabs = group.target === 'tabs';
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
-  const headers = [...group.headers, ...(group.responseHeaders ?? [])].filter(
-    (h) => isValidHeaderName(h.name.trim()) && isValidHeaderValue(h.value),
-  ).length;
+  const headers =
+    group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length +
+    (group.responseHeaders ?? []).filter((h) => h.enabled !== false && isValidResponseHeader(h)).length;
   const inactive = group.enabled && (targets === 0 || headers === 0);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
@@ -126,6 +126,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             label="Request headers"
             headers={group.headers}
             suggestions={COMMON_HEADERS}
+            canAppend={canAppendRequestHeader}
             required={group.enabled && headers === 0}
             onChange={(next) => onChange({ ...group, headers: next })}
           />
@@ -134,6 +135,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             label="Response headers"
             headers={group.responseHeaders ?? []}
             suggestions={COMMON_RESPONSE_HEADERS}
+            canAppend={() => true}
             required={false}
             onChange={(next) => onChange({ ...group, responseHeaders: next })}
           />
