@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isSecretHeader } from './headers';
+import { isSecretHeader, valuePresets } from './headers';
 
 describe('isSecretHeader', () => {
   it.each([
     'Authorization',
     'proxy-authorization',
     'Cookie',
+    'Set-Cookie',
     'X-Api-Key',
     'apikey',
     'X_API_KEY',
@@ -17,8 +18,31 @@ describe('isSecretHeader', () => {
     'X-Hub-Signature',
   ])('hides %s', (name) => expect(isSecretHeader(name)).toBe(true));
 
-  it.each(['User-Agent', 'Accept-Language', 'X-Request-ID', 'X-Forwarded-For', 'Keep-Alive', 'X-Monkey', 'Content-Type', ''])(
-    'shows %j',
-    (name) => expect(isSecretHeader(name)).toBe(false),
+  it.each([
+    'User-Agent',
+    'Accept-Language',
+    'X-Request-ID',
+    'X-Forwarded-For',
+    'Keep-Alive',
+    'X-Monkey',
+    'Content-Type',
+    'Access-Control-Allow-Credentials',
+    '',
+  ])('shows %j', (name) => expect(isSecretHeader(name)).toBe(false));
+});
+
+describe('valuePresets', () => {
+  it.each(['User-Agent', 'user-agent', 'USER-AGENT'])('offers user agents for %s', (name) =>
+    expect(valuePresets(name).map((preset) => preset.label)).toContain('Chrome on Windows'),
   );
+
+  it.each(['Accept', 'X-User-Agent', 'User-Agents', ''])('offers nothing for %j', (name) =>
+    expect(valuePresets(name)).toEqual([]),
+  );
+
+  // They become Autocomplete options, and Mantine throws on duplicate ones.
+  it('has unique values', () => {
+    const values = valuePresets('User-Agent').map((preset) => preset.value);
+    expect(new Set(values).size).toBe(values.length);
+  });
 });
