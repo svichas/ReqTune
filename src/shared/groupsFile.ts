@@ -3,8 +3,14 @@ import type { Group, HeaderEntry } from './types';
 const VERSION = 1;
 const MAX_BYTES = 1024 * 1024;
 
+// Fields left unset stay absent rather than undefined, so storage never has to decide what to make of one.
 const copyHeaders = (headers: HeaderEntry[]) =>
-  headers.map(({ name, value, operation, enabled }) => ({ name, value, operation, enabled }));
+  headers.map(({ name, value, operation, enabled }) => ({
+    name,
+    value,
+    ...(operation !== undefined && { operation }),
+    ...(enabled !== undefined && { enabled }),
+  }));
 
 /**
  * Groups as the file Export saves: pretty-printed `{ "reqtune": 1, "groups": [...] }`, each as it's stored. Ids stay

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { patternToRegex } from '../shared/pattern';
 import type { Group, HeaderEntry } from '../shared/types';
-import { buildRules } from './rules';
+import { buildRules, withinRegexLimit } from './rules';
 
 const resourceTypes = ['main_frame', 'xmlhttprequest'] as chrome.declarativeNetRequest.ResourceType[];
 const group = (patterns: string[], headers: HeaderEntry[], enabled = true): Group => ({
@@ -218,6 +218,20 @@ describe('buildRules', () => {
       rule(1, 3, 'a.com', 'X-Token', 't'),
       block(2, 2, { regexFilter: patternToRegex('a.com') }),
       rule(3, 1, 'b.com', 'X-Token', 't'),
+    ]);
+  });
+
+  it("keeps rules within Chrome's cap on regex rules, dropping the lowest-priority patterns", () => {
+    const groups: Group[] = [
+      group(['a.com', 'b.com'], [{ name: 'X-A', value: '1' }]),
+      { ...group(['ignored.com'], [{ name: 'X-Tab', value: '1' }]), id: 'tabs', target: 'tabs' },
+      group(['c.com'], [{ name: 'X-C', value: '1' }]),
+    ];
+    const rules = buildRules(groups, { tabs: [3] }, resourceTypes);
+    expect(withinRegexLimit(rules, 2).map((rule) => rule.condition.regexFilter ?? 'tabs')).toEqual([
+      patternToRegex('a.com'),
+      patternToRegex('b.com'),
+      'tabs',
     ]);
   });
 });
