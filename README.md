@@ -21,9 +21,9 @@
 
 ## Features
 
-- **Groups** — pair wildcard URL patterns with the headers to send, and flip each group on or off.
-- **Wildcard patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more ([syntax](#pattern-syntax)).
-- **Instant** — changes apply as you type; Chrome sets the headers natively, with no JavaScript in the request path.
+- **Groups** — pair URL patterns with the headers to send, and flip each group on or off.
+- **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
+- **Instant** — changes apply as you type (a `regex:` pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
@@ -79,10 +79,12 @@ A group shows **Inactive** until it has a valid header and something to target: 
 | `https://example.com/*` | HTTPS requests only |
 | `/graphql` | That path on any host |
 | `example.com/search?q=*` | Paths whose query string matches too |
+| `regex:^https://(api\|admin)\.example\.com/v[0-9]+/` | URLs the regular expression after `regex:` matches, here any API version on two hosts |
 
 - In the host, `*` never crosses a `/`, so `example.com` can't match `example.com.evil.com`.
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
+- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII. It applies once you leave the field, as a half-typed one like `^https://` would match every site.
 - Chrome limits how complex each pattern can be. Very long patterns (roughly 70+ characters, or many `*`) are flagged in the panel and skipped, and every other rule keeps working.
 
 ## How it works
@@ -95,7 +97,7 @@ flowchart LR
   DNR -- sets headers on --> R(("Matching requests"))
 ```
 
-The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each pattern compiles to an anchored regex, rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
 
 A group that targets tabs becomes a single session rule with a `tabIds` condition and no URL filter, so it matches every request from those tabs; session rules are the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the picks live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 
