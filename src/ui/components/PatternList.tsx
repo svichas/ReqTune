@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TextInput } from '@mantine/core';
-import { isRegexPattern, patternToRegex } from '../../shared/pattern';
+import { chromeTakes, isRegexPattern, patternToRegex } from '../../shared/pattern';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 
@@ -29,7 +29,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
       patterns.map(async (pattern) => {
         const regex = patternToRegex(pattern);
         if (!regex) return false;
-        return !(await chrome.declarativeNetRequest.isRegexSupported({ regex, isCaseSensitive: false })).isSupported;
+        return !(await chromeTakes(regex));
       }),
     ).then((flags) => {
       if (current) setUnsupported(patterns.filter((_, i) => flags[i]));
@@ -56,7 +56,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
     const isRegex = isRegexPattern(pattern);
     if (pattern.trim() !== '' && patternToRegex(pattern) === null) {
       return isRegex
-        ? 'Invalid regex; Chrome takes ASCII-only RE2, with no lookarounds or backreferences'
+        ? 'Invalid regex; Chrome takes ASCII RE2 with no lookarounds or backreferences, and lowercases it, so no \\D'
         : 'Invalid pattern; see Help for the syntax';
     }
     if (unsupported.includes(pattern)) {

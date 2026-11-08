@@ -1,5 +1,6 @@
+import { chromeTakes } from '../shared/pattern';
 import { getGroups, getPaused, getTabSelections, setPaused, setSyncError, watchKey } from '../shared/storage';
-import { buildRules, withinRegexLimit } from './rules';
+import { supportedRules, withinRegexLimit } from './rules';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
 
@@ -16,16 +17,10 @@ async function applyRules(): Promise<void> {
       chrome.action.setTitle({ title: paused ? 'ReqTune is paused' : defaultTitle }),
     ]);
     // Every type must be listed: without resourceTypes Chrome skips main_frame requests.
-    const rules = paused ? [] : buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
-    // One regex Chrome can't compile, over its size limit or (from `regex:`) not RE2, would fail the whole update, so
-    // those rules are left out.
-    const checks = await Promise.all(
-      rules.map(({ condition: { regexFilter } }) =>
-        regexFilter ? dnr.isRegexSupported({ regex: regexFilter, isCaseSensitive: false }) : { isSupported: true },
-      ),
-    );
-    const supported = rules.filter((_, i) => checks[i].isSupported);
-    const addRules = withinRegexLimit(supported, dnr.MAX_NUMBER_OF_REGEX_RULES);
+    const { rules, skipped, repeats } = paused
+      ? { rules: [], skipped: 0, repeats: [] }
+      : await supportedRules(groups, tabSelections, Object.values(dnr.ResourceType), chromeTakes);
+    const addRules = withinRegexLimit(rules, dnr.MAX_NUMBER_OF_REGEX_RULES);
     // Chrome only matches tabIds in session rules, which, like tab ids, don't outlive the browser session.
     await dnr.updateDynamicRules({
       removeRuleIds: ids(await dnr.getDynamicRules()),
@@ -35,12 +30,16 @@ async function applyRules(): Promise<void> {
       removeRuleIds: ids(await dnr.getSessionRules()),
       addRules: addRules.filter((rule) => rule.condition.tabIds),
     });
-    const unusable = rules.length - supported.length;
-    const overLimit = supported.length - addRules.length;
+    const overLimit = rules.length - addRules.length;
+    const names = repeats.map((group) => group.name || 'Untitled group').join(', ');
     const notes = [
-      unusable && `${unusable} pattern(s) Chrome can't use were skipped; see below.`,
+      skipped && `${skipped} pattern(s) Chrome can't use were skipped; see below.`,
+      repeats.length &&
+        `In ${names}, a URL that two of its patterns match may get each append twice: ` +
+          "Chrome can't take those patterns as one regex.",
       overLimit &&
-        `Chrome takes ${dnr.MAX_NUMBER_OF_REGEX_RULES} patterns at most, so the last ${overLimit} were left out.`,
+        `Chrome takes at most ${dnr.MAX_NUMBER_OF_REGEX_RULES} rules for patterns, ` +
+          `so the ${overLimit} lowest in the list were left out.`,
     ];
     await setSyncError(notes.filter(Boolean).join(' ') || undefined);
   } catch (error) {

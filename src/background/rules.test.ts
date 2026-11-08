@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { patternToRegex } from '../shared/pattern';
 import type { Group, HeaderEntry } from '../shared/types';
-import { buildRules, withinRegexLimit } from './rules';
+import { buildRules, ruleRegexes, supportedRules, withinRegexLimit } from './rules';
 
 const resourceTypes = ['main_frame', 'xmlhttprequest'] as chrome.declarativeNetRequest.ResourceType[];
 const group = (patterns: string[], headers: HeaderEntry[], enabled = true): Group => ({
@@ -232,6 +232,81 @@ describe('buildRules', () => {
       patternToRegex('a.com'),
       patternToRegex('b.com'),
       'tabs',
+    ]);
+  });
+
+  // Wildcard patterns share their `^scheme://` start, factored out.
+  const start = '^(https?|wss?)://';
+  const combined = (...patterns: string[]) =>
+    `${start}(?:${patterns.map((pattern) => patternToRegex(pattern)!.slice(start.length)).join('|')})`;
+  const cookie: HeaderEntry = { name: 'Cookie', value: 'debug=1', operation: 'append' };
+
+  it("gives an appending group's patterns that can match one URL a single rule, so Chrome can't append twice", () => {
+    const headers = [{ name: 'X-Env', value: 'qa' }, cookie];
+    const appends = group(['example.com', 'not valid', '*.example.com', 'other.org'], headers);
+    // Unchecked, every pattern gets its own rule, so Chrome can be asked about each.
+    expect(buildRules([appends], {}, resourceTypes)).toHaveLength(3);
+    const regexes = buildRules([appends], {}, resourceTypes, new Set()).map((rule) => rule.condition.regexFilter);
+    expect(regexes).toEqual([combined('example.com', '*.example.com'), patternToRegex('other.org')]);
+    const urls = ['https://example.com/', 'https://a.example.com/x', 'https://other.org/', 'https://example.com.evil/'];
+    expect(urls.map((url) => new RegExp(regexes[0]!, 'i').test(url))).toEqual([true, true, false, false]);
+  });
+
+  it('combines only patterns Chrome takes, and goes back to a rule each when it refuses the combination', () => {
+    const appends = group(['example.com', 'regex:bad', '/api/*'], [cookie]);
+    const bad = new Set(['bad']);
+    expect(ruleRegexes(appends, bad)).toEqual({ regexes: [combined('example.com', '/api/*')], repeats: false });
+    const refused = new Set(['bad', combined('example.com', '/api/*')]);
+    expect(ruleRegexes(appends, refused)).toEqual({
+      regexes: [patternToRegex('example.com'), patternToRegex('/api/*')],
+      repeats: true,
+    });
+  });
+
+  it('counts response appends too, and keeps a rule per pattern for groups without a usable append', () => {
+    const patterns = ['example.com', '/api/*'];
+    const set = { name: 'X-Env', value: 'qa' };
+    const groups: Group[] = [
+      { ...group(patterns, []), responseHeaders: [{ name: 'Vary', value: 'Origin', operation: 'append' }] },
+      group(patterns, [set]),
+      group(patterns, [set, { ...cookie, enabled: false }]),
+      // Chrome won't append to this request header, so the row is never sent.
+      group(patterns, [set, { name: 'X-Custom', value: '1', operation: 'append' }]),
+      { ...group(patterns, [cookie]), action: 'block' },
+    ];
+    expect(groups.map((g) => buildRules([g], {}, resourceTypes, new Set()).length)).toEqual([1, 2, 2, 2, 2]);
+  });
+
+  it('asks Chrome about each pattern, then their combinations, and reports what it refused', async () => {
+    const groups: Group[] = [
+      { ...group(['a.com', '/api/*', 'bad.com'], [cookie]), id: 'combined' },
+      { ...group(['c.com', '*.c.com', 'd.com'], [cookie]), id: 'repeats' },
+      { ...group(['e.com', 'bad.org'], [{ name: 'X-Env', value: 'qa' }]), id: 'plain' },
+    ];
+    const asked: string[] = [];
+    // This Chrome refuses anything with "bad" in it, and the c.com patterns as one regex.
+    const isSupported = async (regex: string) => {
+      asked.push(regex);
+      return !regex.includes('bad') && regex !== combined('c.com', '*.c.com');
+    };
+    const { rules, skipped, repeats } = await supportedRules(groups, {}, resourceTypes, isSupported);
+    expect(rules.map((rule) => rule.condition.regexFilter)).toEqual([
+      combined('a.com', '/api/*'),
+      patternToRegex('c.com'),
+      patternToRegex('*.c.com'),
+      patternToRegex('d.com'),
+      patternToRegex('e.com'),
+    ]);
+    expect(skipped).toBe(2);
+    expect(repeats).toEqual([groups[1]]);
+    expect(asked).toHaveLength(new Set(asked).size); // each regex asked about once
+    expect(asked).toHaveLength(10);
+  });
+
+  it("doesn't factor a raw regex, whose top-level | would change meaning", () => {
+    const appends = group(['example.com', 'regex:^https://a\\.com|b'], [cookie]);
+    expect(ruleRegexes(appends, new Set()).regexes).toEqual([
+      `(?:${patternToRegex('example.com')})|(?:^https://a\\.com|b)`,
     ]);
   });
 });

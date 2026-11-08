@@ -1,4 +1,4 @@
-import { patternToRegex } from '../shared/pattern';
+import { canOverlap, isRegexPattern, patternToRegex } from '../shared/pattern';
 import type { Group, HeaderEntry, TabSelections } from '../shared/types';
 import { isValidRequestHeader, isValidResponseHeader } from '../shared/validation';
 
@@ -22,12 +22,77 @@ export function withinRegexLimit(rules: chrome.declarativeNetRequest.Rule[], max
   return rules.filter((rule) => !rule.condition.regexFilter || ++regexes <= max);
 }
 
+// Chrome lets appends add up, even from one extension's rules, so a URL that two of a group's rules match would get
+// each append twice. A set or a remove applies once however many rules match.
+const appends = (group: Group) =>
+  group.action !== 'block' &&
+  [
+    ...headerInfos(group.headers, isValidRequestHeader),
+    ...headerInfos(group.responseHeaders ?? [], isValidResponseHeader),
+  ].some((header) => header.operation === 'append');
+
+/**
+ * One regex for patterns that share a rule. Factoring out a shared `^scheme://` start keeps it within Chrome's size cap
+ * far more often; only wildcard patterns are factored, as a raw `regex:` one may have a top-level `|` it would change.
+ */
+function combine(patterns: string[]): string {
+  const regexes = patterns.map((pattern) => patternToRegex(pattern)!);
+  const start = /^\^[^:]*:\/\//.exec(regexes[0])?.[0];
+  if (start && !patterns.some(isRegexPattern) && regexes.every((regex) => regex.startsWith(start))) {
+    return `${start}(?:${regexes.map((regex) => regex.slice(start.length)).join('|')})`;
+  }
+  return regexes.map((regex) => `(?:${regex})`).join('|');
+}
+
+// One sync builds the rules three times over; overlap checks are worth doing once, in a big group.
+const clustered = new WeakMap<Group, { key: string; clusters: string[][] }>();
+
+/** The patterns in groups that can meet, directly or through others. */
+function clusters(group: Group, patterns: string[]): string[][] {
+  const key = patterns.join('\n');
+  const cached = clustered.get(group);
+  if (cached?.key === key) return cached.clusters;
+  const result: string[][] = [];
+  for (const pattern of patterns) {
+    const meeting = result.filter((cluster) => cluster.some((other) => canOverlap(pattern, other)));
+    result.push([...meeting.flat(), pattern]);
+    for (const cluster of meeting) result.splice(result.indexOf(cluster), 1);
+  }
+  clustered.set(group, { key, clusters: result });
+  return result;
+}
+
+/**
+ * The regexes of a group's URL rules. Without `refused` (regexes Chrome won't take), one per valid pattern, to check
+ * them one by one. With it, one per pattern Chrome takes, except that in a group that appends, patterns that can match
+ * one URL share a rule if Chrome takes them as one regex; `repeats` says some couldn't.
+ */
+export function ruleRegexes(group: Group, refused?: ReadonlySet<string>) {
+  const patterns = group.patterns.filter((pattern) => {
+    const regex = patternToRegex(pattern);
+    return regex !== null && !refused?.has(regex);
+  });
+  const regex = (pattern: string) => patternToRegex(pattern)!;
+  if (!refused || !appends(group)) return { regexes: patterns.map(regex), repeats: false };
+  let repeats = false;
+  const regexes = clusters(group, patterns).flatMap((cluster) => {
+    if (cluster.length === 1) return [regex(cluster[0])];
+    const combined = combine(cluster);
+    if (!refused.has(combined)) return [combined];
+    repeats = true;
+    return cluster.map(regex);
+  });
+  return { regexes, repeats };
+}
+
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
+// `refused` is ruleRegexes': leave it out to get a rule per valid pattern, to check them one by one.
 export function buildRules(
   groups: Group[],
   tabSelections: TabSelections,
   resourceTypes: chrome.declarativeNetRequest.ResourceType[],
+  refused?: ReadonlySet<string>,
 ): chrome.declarativeNetRequest.Rule[] {
   const rules: chrome.declarativeNetRequest.Rule[] = [];
   groups.forEach((group, index) => {
@@ -68,10 +133,37 @@ export function buildRules(
       if (tabIds.length) rules.push(rule({ tabIds }));
       return;
     }
-    for (const pattern of group.patterns) {
-      const regexFilter = patternToRegex(pattern);
-      if (regexFilter) rules.push(rule({ regexFilter }));
-    }
+    for (const regexFilter of ruleRegexes(group, refused).regexes) rules.push(rule({ regexFilter }));
   });
   return rules;
+}
+
+/**
+ * The rules to install, by asking Chrome about each regex first: one it refuses would fail the whole update, over its
+ * size limit or, from `regex:`, not RE2. Patterns are asked about one by one, and only then the combinations of those
+ * Chrome takes. `skipped` counts patterns Chrome refused; `repeats` lists groups whose appends may still add up.
+ */
+export async function supportedRules(
+  groups: Group[],
+  tabSelections: TabSelections,
+  resourceTypes: chrome.declarativeNetRequest.ResourceType[],
+  isSupported: (regex: string) => Promise<boolean>,
+) {
+  const answers = new Map<string, Promise<boolean>>();
+  const refused = new Set<string>();
+  const ask = (rules: chrome.declarativeNetRequest.Rule[]) =>
+    Promise.all(
+      rules.flatMap((rule) => rule.condition.regexFilter ?? []).map(async (regex) => {
+        if (!answers.has(regex)) answers.set(regex, isSupported(regex));
+        if (!(await answers.get(regex))) refused.add(regex);
+      }),
+    );
+  const single = buildRules(groups, tabSelections, resourceTypes);
+  await ask(single);
+  await ask(buildRules(groups, tabSelections, resourceTypes, refused));
+  return {
+    rules: buildRules(groups, tabSelections, resourceTypes, refused),
+    skipped: single.filter((rule) => refused.has(rule.condition.regexFilter ?? '')).length,
+    repeats: groups.filter((group) => group.enabled && group.target !== 'tabs' && ruleRegexes(group, refused).repeats),
+  };
 }

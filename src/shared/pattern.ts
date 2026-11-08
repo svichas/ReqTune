@@ -12,12 +12,82 @@ function rawRegex(source: string): string | null {
   // Chrome needs ASCII, and RE2 has no lookarounds or backreferences. Other escapes are dropped before looking, so a
   // literal `\(?=` or `\\1` passes; the worker's isRegexSupported check catches whatever else RE2 rejects.
   if (!source || /[^\x00-\x7f]/.test(source) || /\(\?<?[=!]|\\[1-9]/.test(source.replace(/\\[^1-9]/g, ''))) return null;
+  // Chrome lowercases a case-insensitive regex before matching, which turns `\D` into `\d`, its opposite, and `\pL`
+  // into `\pl`, an error.
+  if (/\\(p\{?)?[A-Z]/.test(source.replace(/\\\\/g, ''))) return null;
   try {
     new RegExp(source);
     return source;
   } catch {
     return null;
   }
+}
+
+/** A wildcard pattern's parts, defaults filled in, or null when it isn't a valid one (a `regex:` pattern isn't). */
+function wildcardParts(input: string) {
+  const pattern = input.trim();
+  // Besides inner whitespace, reject non-ASCII: Chrome refuses a regexFilter that isn't ASCII.
+  if (isRegexPattern(pattern) || /[^\x21-\x7e]/.test(pattern)) return null;
+  const match = /^(?:(\*|https?|wss?):\/\/)?([^/?#:@]*)(?::(\*|\d+))?(\/.*)?$/i.exec(pattern);
+  // Only a path-only pattern may omit the host.
+  if (!match || (!match[2] && pattern[0] !== '/')) return null;
+  const [, scheme = '*', host, port = '*', path] = match;
+  return { scheme, host, port, path };
+}
+
+/** Whether two globs, where `*` is any run of characters, can match one string; letters in any case. */
+function globsMeet(a: string, b: string): boolean {
+  const [x, y] = [a.toLowerCase(), b.toLowerCase()];
+  const seen = new Set<string>();
+  const meet = (i: number, j: number): boolean => {
+    if (i === x.length && j === y.length) return true;
+    if (seen.has(`${i},${j}`)) return false;
+    seen.add(`${i},${j}`);
+    const [p, q] = [x[i], y[j]];
+    return (
+      (p === '*' && (meet(i + 1, j) || (q !== undefined && q !== '*' && meet(i, j + 1)))) ||
+      (q === '*' && (meet(i, j + 1) || (p !== undefined && p !== '*' && meet(i + 1, j)))) ||
+      (p !== undefined && p !== '*' && p === q && meet(i + 1, j + 1))
+    );
+  };
+  return meet(0, 0);
+}
+
+/**
+ * Whether some URL could match both patterns. Errs towards yes: always for a `regex:` or invalid one, and a host `*` is
+ * taken to cross any character, though it never crosses a `/`. It does cross a `:`, so with the port left open it can
+ * run on into it: `web*2` matches web1:8082.
+ */
+export function canOverlap(a: string, b: string): boolean {
+  const [p, q] = [wildcardParts(a), wildcardParts(b)];
+  if (!p || !q) return true;
+  // `*.example.com` also matches example.com itself; a path-only pattern takes any host. With the port open, a host
+  // ending in `*` and digits can end anywhere, as its `*` can take `1:808` of web1:8082.
+  const hosts = ({ host, port }: { host: string; port: string }) =>
+    (host.startsWith('*.') ? [host, host.slice(2)] : [host || '*']).flatMap((h) =>
+      port === '*' ? [h, h.replace(/\*[\d*]*$/, '*')] : [h],
+    );
+  // Whatever follows the path can be anything, and a path `*` can run on into the query: `/a*b` matches `/a?x=b`.
+  const rest = (path = '') => `${path}*`;
+  return (
+    (p.scheme === '*' || q.scheme === '*' || p.scheme.toLowerCase() === q.scheme.toLowerCase()) &&
+    (p.port === '*' || q.port === '*' || p.port === q.port) &&
+    hosts(p).some((x) => hosts(q).some((y) => globsMeet(x, y))) &&
+    globsMeet(rest(p.path), rest(q.path))
+  );
+}
+
+/**
+ * Whether Chrome takes the regex as a case-insensitive regexFilter: it checks one as written, but lowercases it to
+ * match, so both forms must compile.
+ */
+export async function chromeTakes(regex: string): Promise<boolean> {
+  const answers = await Promise.all(
+    [...new Set([regex, regex.toLowerCase()])].map((form) =>
+      chrome.declarativeNetRequest.isRegexSupported({ regex: form, isCaseSensitive: false }),
+    ),
+  );
+  return answers.every((answer) => answer.isSupported);
 }
 
 /**
@@ -41,12 +111,9 @@ function rawRegex(source: string): string | null {
 export function patternToRegex(input: string): string | null {
   const pattern = input.trim();
   if (isRegexPattern(pattern)) return rawRegex(pattern.slice('regex:'.length).trim());
-  // Besides inner whitespace, reject non-ASCII: Chrome refuses a regexFilter that isn't ASCII.
-  if (/[^\x21-\x7e]/.test(pattern)) return null;
-  const match = /^(?:(\*|https?|wss?):\/\/)?([^/?#:@]*)(?::(\*|\d+))?(\/.*)?$/i.exec(pattern);
-  // Only a path-only pattern may omit the host.
-  if (!match || (!match[2] && pattern[0] !== '/')) return null;
-  const [, scheme = '*', host, port = '*', path] = match;
+  const parts = wildcardParts(pattern);
+  if (!parts) return null;
+  const { scheme, host, port, path } = parts;
 
   const schemeRe = scheme === '*' ? '(https?|wss?)' : scheme;
   const hostRe = host.startsWith('*.')

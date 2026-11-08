@@ -104,7 +104,7 @@ To back up or share groups, pick **Export all groups** from the ⋮ menu at the 
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
 - A pattern applies once you leave its field or press Enter, as a half-typed one like `*` or `regex:^https://` would match every site.
-- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII.
+- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII. It also lowercases the regex before matching, so escapes with a capital letter aren't allowed (write `[^\d]`, `[^\s]` or `[^\w]` for `\D`, `\S` or `\W`), and a range like `[A-z]` becomes `[a-z]`.
 - Chrome limits how complex each pattern can be. Very long patterns (roughly 70+ characters, or many `*`) are flagged in the panel and skipped, and every other rule keeps working.
 
 ## How it works
@@ -117,7 +117,7 @@ flowchart LR
   DNR -- sets headers on, or blocks --> R(("Matching requests"))
 ```
 
-The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations) and method unless the group's Filters narrow them, and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. In a group that appends to a header, patterns that can match the same URL share one rule instead: Chrome lets appends add up, so a URL that two rules match would get each append twice. Chrome caps how big each regex can be, so if it can't take those patterns as one, they keep a rule each, and the panel says the group's appends may repeat. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations) and method unless the group's Filters narrow them, and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
 
 A group that targets tabs becomes a single session rule with a `tabIds` condition and no URL filter, so it matches every request from those tabs; session rules are the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the picks live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 
