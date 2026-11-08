@@ -90,6 +90,16 @@ input.name:focus {
   padding: 12px var(--rt-group-inset) max(12px, var(--rt-group-inset));
 }
 
+/* Only as wide as its two options; the body's column would stretch it across the card. */
+.action {
+  align-self: flex-start;
+}
+
+/* Mantine draws the focus ring flush with the option, the same blue as the selected fill; the gap keeps it visible. */
+.action label {
+  outline-offset: 2px;
+}
+
 /* Disabled groups recede; the switch stays crisp so turning one back on is obvious. */
 .card[data-off] :is(.title, .meta, .body) {
   opacity: 0.6;

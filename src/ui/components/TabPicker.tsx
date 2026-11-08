@@ -107,7 +107,7 @@ export function TabPicker({ tabs, selected, onSelectedChange }: Props) {
         {allSelected ? 'Unselect all' : 'Select all'}
       </Button>
       <Text size="xs" c="dimmed" px={2} pt={6}>
-        Every request these tabs make gets the headers, whatever its URL. Picks reset when Chrome restarts.
+        The group applies to every request these tabs make, whatever its URL. Picks reset when Chrome restarts.
       </Text>
     </>
   );
