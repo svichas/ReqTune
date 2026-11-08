@@ -22,6 +22,7 @@
 ## Features
 
 - **Groups** — pair URL patterns with the headers to send, and flip each group on or off.
+- **Pause single headers** — untick the box beside a header to stop sending it without deleting it.
 - **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
 - **Instant** — changes apply as you type (a `regex:` pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
@@ -67,7 +68,7 @@ The button at the start of each header row picks what happens to that header: **
 
 The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
 
-A group shows **Inactive** until it has a valid header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
+A group shows **Inactive** until it has a valid, ticked header and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
 ## Pattern syntax
 

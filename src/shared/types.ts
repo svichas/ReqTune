@@ -5,6 +5,8 @@ export interface HeaderEntry {
   value: string;
   /** Replace the header (the default), add the value to it, or drop it. */
   operation?: 'set' | 'append' | 'remove';
+  /** Off keeps the header in its group without sending it; absent means on. */
+  enabled?: boolean;
 }
 
 /** URL patterns plus the headers applied to requests matching any of them. */

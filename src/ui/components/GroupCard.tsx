@@ -42,12 +42,12 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   }, []);
 
   // Same filters as the worker's buildRules: without a usable target (a valid pattern, or a picked tab that is still
-  // open) and a valid header the group sends nothing. Closed tabs make no more requests.
+  // open) and a valid header that's switched on, the group sends nothing. Closed tabs make no more requests.
   const byTabs = group.target === 'tabs';
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
-  const headers = group.headers.filter(isValidRequestHeader).length;
+  const headers = group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length;
   const inactive = group.enabled && (targets === 0 || headers === 0);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.

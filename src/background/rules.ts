@@ -12,12 +12,14 @@ export function buildRules(
   const rules: chrome.declarativeNetRequest.Rule[] = [];
   groups.forEach((group, index) => {
     if (!group.enabled) return;
-    const requestHeaders = group.headers.filter(isValidRequestHeader).map(({ name, value, operation = 'set' }) => {
-      const header = name.trim();
-      // Chrome rejects a value on remove, and documents its append allowlist as lowercase and case-sensitive.
-      if (operation === 'remove') return { header, operation };
-      return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
-    });
+    const requestHeaders = group.headers
+      .filter((h) => h.enabled !== false && isValidRequestHeader(h))
+      .map(({ name, value, operation = 'set' }) => {
+        const header = name.trim();
+        // Chrome rejects a value on remove, and documents its append allowlist as lowercase and case-sensitive.
+        if (operation === 'remove') return { header, operation };
+        return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
+      });
     if (!requestHeaders.length) return;
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
