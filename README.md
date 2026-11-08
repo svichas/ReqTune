@@ -23,7 +23,7 @@
 
 - **Groups** — pair URL patterns with the headers to send, and flip each group on or off.
 - **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
-- **Instant** — changes apply as you type (a `regex:` pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
+- **Instant** — changes apply as you type (a URL pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
@@ -84,7 +84,8 @@ A group shows **Inactive** until it has a valid header and something to target: 
 - In the host, `*` never crosses a `/`, so `example.com` can't match `example.com.evil.com`.
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
-- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII. It applies once you leave the field, as a half-typed one like `^https://` would match every site.
+- A pattern applies once you leave its field or press Enter, as a half-typed one like `*` or `regex:^https://` would match every site.
+- A `regex:` pattern goes to Chrome as written: it matches anywhere in the URL unless you anchor it with `^`. Chrome reads it as [RE2](https://github.com/google/re2/wiki/Syntax), which has no lookarounds or backreferences, and accepts only ASCII.
 - Chrome limits how complex each pattern can be. Very long patterns (roughly 70+ characters, or many `*`) are flagged in the panel and skipped, and every other rule keeps working.
 
 ## How it works

@@ -58,7 +58,7 @@ export function HelpPopover() {
         </Text>
         <Text size="xs" className={classes.fact} mt="sm">
           <IconCloudCheck size={14} />
-          <span>Changes save automatically; a <Code>regex:</Code> pattern once you leave its field.</span>
+          <span>Changes save automatically; a URL pattern once you leave its field.</span>
         </Text>
       </Popover.Dropdown>
     </Popover>

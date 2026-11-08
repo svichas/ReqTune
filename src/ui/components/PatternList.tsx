@@ -17,9 +17,11 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
   // Patterns Chrome can't compile, over its regex size limit or (from `regex:`) not RE2; the worker skips them. Only
   // Chrome can tell, asynchronously.
   const [unsupported, setUnsupported] = useState<string[]>([]);
-  // The text of a `regex:` row being typed, saved when focus leaves it: a half-typed regex matches more URLs than the
-  // finished one (`^` alone matches all), and the group's headers would go there meanwhile.
+  // The text of the row being typed, saved when focus leaves it: a half-typed pattern can match more URLs than the
+  // finished one (`*` or `regex:^` alone matches all), and the group's headers would go there meanwhile.
   const [draft, setDraft] = useState<{ i: number; value: string }>();
+  // The rows as shown, with the draft: Enter and Backspace edit these, so neither drops or misplaces unsaved text.
+  const shown = draft ? patterns.map((p, j) => (j === draft.i ? draft.value : p)) : patterns;
 
   useEffect(() => {
     let current = true;
@@ -66,12 +68,14 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
 
   const insert = (i: number) => {
     focusAfterRender(String(i));
-    onChange([...patterns.slice(0, i), '', ...patterns.slice(i)]);
+    setDraft(undefined);
+    onChange([...shown.slice(0, i), '', ...shown.slice(i)]);
   };
   // Focus moves to the previous row (the first one when removing the top row), or to "Add" when none remain.
   const remove = (i: number) => {
-    focusAfterRender(patterns.length > 1 ? String(Math.max(i - 1, 0)) : 'add', true);
-    onChange(patterns.filter((_, j) => j !== i));
+    focusAfterRender(shown.length > 1 ? String(Math.max(i - 1, 0)) : 'add', true);
+    setDraft(undefined);
+    onChange(shown.filter((_, j) => j !== i));
   };
 
   return (
@@ -80,7 +84,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
       addRef={ref('add')}
       onAdd={() => insert(patterns.length)}
     >
-      {patterns.map((p, i) => (draft?.i === i ? draft.value : p)).map((pattern, i) => (
+      {shown.map((pattern, i) => (
         <div key={i} className={classes.row}>
           <TextInput
             ref={ref(String(i))}
@@ -93,19 +97,12 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
             spellCheck={false}
             value={pattern}
             error={errorFor(pattern)}
-            onChange={(e) => {
-              const value = e.currentTarget.value;
-              if (isRegexPattern(value)) setDraft({ i, value });
-              else {
-                setDraft(undefined);
-                save(i, value);
-              }
-            }}
+            onChange={(e) => setDraft({ i, value: e.currentTarget.value })}
             onBlur={commit}
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') insert(i + 1);
-              else if (e.key === 'Backspace' && pattern === '' && patterns.length > 1) {
+              else if (e.key === 'Backspace' && pattern === '' && shown.length > 1) {
                 e.preventDefault();
                 remove(i);
               }
