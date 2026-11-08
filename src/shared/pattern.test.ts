@@ -154,6 +154,8 @@ describe('canOverlap', () => {
     ['https://example.com', 'example.com:*'],
     ['example.com/a/*', 'example.com/*/b'],
     ['example.com/search?q=*', 'example.com/search'],
+    // Both match https://example.com/a?x=b: a path `*` runs on into the query.
+    ['example.com/a*b', 'example.com/a'],
     ['example.com', 'regex:anything'],
   ])('%s meets %s', (a, b) => {
     expect(canOverlap(a, b)).toBe(true);

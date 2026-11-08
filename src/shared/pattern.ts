@@ -61,13 +61,13 @@ export function canOverlap(a: string, b: string): boolean {
   if (!p || !q) return true;
   // `*.example.com` also matches example.com itself; a path-only pattern takes any host.
   const hosts = (host: string) => (host.startsWith('*.') ? [host, host.slice(2)] : [host || '*']);
-  // Only what precedes a query is compared: a pattern without `?` ignores the query.
-  const path = (path?: string) => (path ? path.split('?')[0] : '*');
+  // Whatever follows the path can be anything, and a path `*` can run on into the query: `/a*b` matches `/a?x=b`.
+  const rest = (path = '') => `${path}*`;
   return (
     (p.scheme === '*' || q.scheme === '*' || p.scheme.toLowerCase() === q.scheme.toLowerCase()) &&
     (p.port === '*' || q.port === '*' || p.port === q.port) &&
     hosts(p.host).some((x) => hosts(q.host).some((y) => globsMeet(x, y))) &&
-    globsMeet(path(p.path), path(q.path))
+    globsMeet(rest(p.path), rest(q.path))
   );
 }
 
