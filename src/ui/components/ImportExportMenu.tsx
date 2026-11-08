@@ -84,7 +84,7 @@ export function ImportExportMenu({ canImport, canExport, onExport, onImport }: P
         {Array.isArray(picked) ? (
           <>
             <Text size="sm">
-              They go to the end of the list. Groups saved without their secret values come in switched off.
+              They go to the end of the list. Groups saved without the secret values they send come in switched off.
             </Text>
             <Flex justify="flex-end" gap="sm" mt="lg">
               <Button variant="default" onClick={close}>

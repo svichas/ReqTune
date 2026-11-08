@@ -22,13 +22,33 @@ const groups: Group[] = [
     headers: [{ name: 'X-Env', value: 'qa' }],
     target: 'tabs',
   },
+  {
+    id: 'all',
+    name: 'Every field',
+    enabled: true,
+    patterns: ['regex:^https://(api|admin)\\.example\\.com/v[0-9]+/'],
+    headers: [
+      { name: 'Accept-Language', value: 'el', operation: 'append' },
+      { name: 'X-Old', value: 'kept', operation: 'remove', enabled: false },
+      { name: 'X-New', value: '1', operation: 'set', enabled: true },
+    ],
+    responseHeaders: [{ name: 'Access-Control-Allow-Origin', value: '*' }],
+    action: 'block',
+    resourceTypes: ['xmlhttprequest', 'main_frame'],
+    requestMethods: ['post'],
+  },
 ];
 
 const file = (data: unknown) => new Blob([typeof data === 'string' ? data : JSON.stringify(data)]);
 const withoutIds = (list: Group[]) => list.map(({ id, ...rest }) => rest);
 const valid = { name: 'G', enabled: true, patterns: ['a.com'], headers: [{ name: 'X-A', value: '1' }] };
+const [header] = valid.headers;
 
 describe('serializeGroups', () => {
+  it('writes every field a group sets but its id, as stored', () => {
+    expect(JSON.parse(serializeGroups(groups, () => false)).groups).toEqual(withoutIds(groups));
+  });
+
   it('writes pretty-printed JSON of the known fields only: no ids, tab picks or leftovers', () => {
     const legacy = { ...groups[1], limitToTabs: true } as Group;
     const text = serializeGroups([legacy], () => false);
@@ -54,6 +74,17 @@ describe('serializeGroups', () => {
     expect(lost.enabled).toBe(false);
     expect(kept.enabled).toBe(true);
   });
+
+  it.each<[string, Partial<Group>, boolean]>([
+    ['a response header', { headers: [], responseHeaders: [{ name: 'Set-Cookie', value: 'id=1' }] }, false],
+    ['a header that is off', { headers: [{ name: 'Cookie', value: 'id=1', enabled: false }] }, true],
+    ['a Remove row', { headers: [{ name: 'Cookie', value: 'id=1', operation: 'remove' }] }, true],
+    ['a blocking group', { headers: [{ name: 'Cookie', value: 'id=1' }], action: 'block' }, true],
+  ])('leaves out the secret value of %s, and switches its group off only if it sends it', (_, patch, on) => {
+    const text = serializeGroups([{ ...groups[0], ...patch }], isSecretHeader);
+    expect(text).not.toContain('id=1');
+    expect(JSON.parse(text).groups[0].enabled).toBe(on);
+  });
 });
 
 describe('parseGroupsFile', () => {
@@ -61,7 +92,7 @@ describe('parseGroupsFile', () => {
     const imported = await parseGroupsFile(file(serializeGroups(groups, () => false)));
     expect(withoutIds(imported)).toEqual(withoutIds(groups));
     const ids = imported.map((g) => g.id);
-    expect(new Set(ids).size).toBe(2);
+    expect(new Set(ids).size).toBe(groups.length);
     expect(ids).not.toContain('api');
   });
 
@@ -69,15 +100,30 @@ describe('parseGroupsFile', () => {
     const [group] = await parseGroupsFile(
       file({
         reqtune: 1,
-        groups: [{ ...valid, id: 'old', limitToTabs: true, headers: [{ name: 'X-A', value: '1', note: 'x' }], extra: {} }],
+        groups: [
+          {
+            ...valid,
+            id: 'old',
+            limitToTabs: true,
+            headers: [{ ...header, note: 'x' }],
+            responseHeaders: [{ ...header, enabled: false, note: 'x' }],
+            extra: {},
+          },
+        ],
       }),
     );
-    expect(group).toEqual({ ...valid, id: group.id });
+    expect(group).toEqual({ ...valid, id: group.id, responseHeaders: [{ ...header, enabled: false }] });
     expect(group.id).not.toBe('old');
   });
 
   const padded = JSON.stringify({ reqtune: 1, groups: [valid] }) + ' '.repeat(1024 * 1024);
   const withGroup = (patch: object) => file({ reqtune: 1, groups: [valid, { ...valid, ...patch }] });
+
+  it("keeps filter values Chrome doesn't know, which the worker skips", async () => {
+    const filters = { resourceTypes: ['script', 'not_a_type'], requestMethods: ['POST'] };
+    const [, group] = await parseGroupsFile(withGroup(filters));
+    expect(group).toMatchObject(filters);
+  });
 
   it.each<[string, Blob, string]>([
     ['a file over 1 MB, even valid JSON', new Blob([padded]), 'over 1 MB'],
@@ -94,7 +140,18 @@ describe('parseGroupsFile', () => {
     ['patterns that are not text', withGroup({ patterns: ['a.com', null] }), 'invalid "patterns"'],
     ['headers that are not a list', withGroup({ headers: { name: 'X-A', value: '1' } }), 'invalid "headers"'],
     ['a header without a value', withGroup({ headers: [{ name: 'X-A' }] }), 'invalid "headers"'],
+    ['an unknown header operation', withGroup({ headers: [{ ...header, operation: 'prepend' }] }), 'invalid "headers"'],
+    ['a header switch that is not a boolean', withGroup({ headers: [{ ...header, enabled: 0 }] }), 'invalid "headers"'],
+    ['response headers that are not a list', withGroup({ responseHeaders: header }), 'invalid "responseHeaders"'],
+    [
+      'an unknown response header operation',
+      withGroup({ responseHeaders: [{ ...header, operation: 'delete' }] }),
+      'invalid "responseHeaders"',
+    ],
     ['an unknown target', withGroup({ target: 'everything' }), 'invalid "target"'],
+    ['an unknown action', withGroup({ action: 'redirect' }), 'invalid "action"'],
+    ['resource types that are not text', withGroup({ resourceTypes: ['script', 1] }), 'invalid "resourceTypes"'],
+    ['request methods that are not a list', withGroup({ requestMethods: 'post' }), 'invalid "requestMethods"'],
   ])('rejects %s', async (_, blob, message) => {
     await expect(parseGroupsFile(blob)).rejects.toThrow(message);
   });
