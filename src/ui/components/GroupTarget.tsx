@@ -20,15 +20,17 @@ interface Props {
 }
 
 /**
- * Which requests a group's headers go to: those matching its URL patterns (the default), or every request from the
- * tabs picked for it. One or the other, switched by the two tabs in the label row.
+ * Which requests a group applies to: those matching its URL patterns (the default), or every request from the tabs
+ * picked for it. One or the other, switched by the two tabs in the label row.
  */
 export function GroupTarget({ group, tabs, tabIds, autoFocus, required, onChange, onTabIdsChange }: Props) {
   const setTarget = (target: string | null) => {
     if (target !== 'patterns' && target !== 'tabs') return;
-    // Usually the point is "only in this tab", so start from there rather than an empty, inactive pick.
+    // Usually the point is "only in this tab", so start from there rather than an empty, inactive pick. A blocking
+    // group starts empty instead: one click shouldn't cut off the tab being worked in.
     const current = tabs.find((tab) => tab.current && tab.url);
-    if (target === 'tabs' && current && !tabs.some((tab) => tabIds.includes(tab.id))) onTabIdsChange([current.id]);
+    if (target === 'tabs' && group.action !== 'block' && current && !tabs.some((tab) => tabIds.includes(tab.id)))
+      onTabIdsChange([current.id]);
     onChange({ ...group, target });
   };
 
