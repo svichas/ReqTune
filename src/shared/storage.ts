@@ -7,6 +7,8 @@ export interface StoredState {
   groupsSaveId?: string;
   /** Set by the background worker when Chrome rejects the rules; absent once they apply. */
   syncError?: string;
+  /** Every group off at once, each keeping its own switch for when ReqTune resumes; absent means running. */
+  paused?: boolean;
 }
 
 /**
@@ -79,6 +81,13 @@ export async function getSyncError(): Promise<string | undefined> {
 export function setSyncError(message?: string): Promise<void> {
   return message ? chrome.storage.local.set({ syncError: message }) : chrome.storage.local.remove('syncError');
 }
+
+export async function getPaused(): Promise<boolean> {
+  const { paused } = await chrome.storage.local.get('paused');
+  return paused === true;
+}
+
+export const setPaused = (paused: boolean) => chrome.storage.local.set({ paused });
 
 /** Calls `onChange` whenever `key` changes in the `area` storage area; returns the unsubscribe function. */
 export function watchKey<A extends keyof StorageAreas, K extends keyof StorageAreas[A] & string>(

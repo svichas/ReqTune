@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TextInput } from '@mantine/core';
-import { patternToRegex } from '../../shared/pattern';
+import { isRegexPattern, patternToRegex } from '../../shared/pattern';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 
@@ -14,8 +14,12 @@ interface Props {
 /** The pattern rows alone: GroupTarget draws the label row, with its URL patterns / Tabs switch. */
 export function PatternList({ patterns, autoFocus, onChange }: Props) {
   const { ref, focusAfterRender } = useFocusAfterRender(autoFocus ? '0' : undefined);
-  // Patterns over Chrome's regex compile-size limit (the worker skips them); only Chrome can tell, asynchronously.
-  const [tooComplex, setTooComplex] = useState<string[]>([]);
+  // Patterns Chrome can't compile, over its regex size limit or (from `regex:`) not RE2; the worker skips them. Only
+  // Chrome can tell, asynchronously.
+  const [unsupported, setUnsupported] = useState<string[]>([]);
+  // The text of a `regex:` row being typed, saved when focus leaves it: a half-typed regex matches more URLs than the
+  // finished one (`^` alone matches all), and the group's headers would go there meanwhile.
+  const [draft, setDraft] = useState<{ i: number; value: string }>();
 
   useEffect(() => {
     let current = true;
@@ -26,16 +30,38 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
         return !(await chrome.declarativeNetRequest.isRegexSupported({ regex, isCaseSensitive: false })).isSupported;
       }),
     ).then((flags) => {
-      if (current) setTooComplex(patterns.filter((_, i) => flags[i]));
+      if (current) setUnsupported(patterns.filter((_, i) => flags[i]));
     });
     return () => {
       current = false;
     };
   }, [patterns]);
 
+  const save = (i: number, value: string) => onChange(patterns.map((p, j) => (j === i ? value : p)));
+  const commit = () => {
+    if (!draft) return;
+    setDraft(undefined);
+    save(draft.i, draft.value);
+  };
+  // Closing the panel or the page needn't blur the field first.
+  useEffect(() => {
+    if (!draft) return;
+    window.addEventListener('pagehide', commit);
+    return () => window.removeEventListener('pagehide', commit);
+  });
+
   const errorFor = (pattern: string) => {
-    if (pattern.trim() !== '' && patternToRegex(pattern) === null) return 'Invalid pattern; see Help for the syntax';
-    if (tooComplex.includes(pattern)) return 'Too long or complex for Chrome: shorten it or use fewer *';
+    const isRegex = isRegexPattern(pattern);
+    if (pattern.trim() !== '' && patternToRegex(pattern) === null) {
+      return isRegex
+        ? 'Invalid regex; Chrome takes ASCII-only RE2, with no lookarounds or backreferences'
+        : 'Invalid pattern; see Help for the syntax';
+    }
+    if (unsupported.includes(pattern)) {
+      return isRegex
+        ? 'Not valid RE2, or too long or complex for Chrome'
+        : 'Too long or complex for Chrome: shorten it or use fewer *';
+    }
   };
 
   const insert = (i: number) => {
@@ -54,7 +80,7 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
       addRef={ref('add')}
       onAdd={() => insert(patterns.length)}
     >
-      {patterns.map((pattern, i) => (
+      {patterns.map((p, i) => (draft?.i === i ? draft.value : p)).map((pattern, i) => (
         <div key={i} className={classes.row}>
           <TextInput
             ref={ref(String(i))}
@@ -67,7 +93,15 @@ export function PatternList({ patterns, autoFocus, onChange }: Props) {
             spellCheck={false}
             value={pattern}
             error={errorFor(pattern)}
-            onChange={(e) => onChange(patterns.map((p, j) => (j === i ? e.currentTarget.value : p)))}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              if (isRegexPattern(value)) setDraft({ i, value });
+              else {
+                setDraft(undefined);
+                save(i, value);
+              }
+            }}
+            onBlur={commit}
             onKeyDown={(e) => {
               if (e.nativeEvent.isComposing) return;
               if (e.key === 'Enter') insert(i + 1);
