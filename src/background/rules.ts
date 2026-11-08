@@ -1,6 +1,6 @@
 import { patternToRegex } from '../shared/pattern';
 import type { Group, TabSelections } from '../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../shared/validation';
+import { isValidRequestHeader } from '../shared/validation';
 
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
@@ -13,8 +13,13 @@ export function buildRules(
   groups.forEach((group, index) => {
     if (!group.enabled) return;
     const requestHeaders = group.headers
-      .map(({ name, value }) => ({ header: name.trim(), operation: 'set' as const, value }))
-      .filter(({ header, value }) => isValidHeaderName(header) && isValidHeaderValue(value));
+      .filter((h) => h.enabled !== false && isValidRequestHeader(h))
+      .map(({ name, value, operation = 'set' }) => {
+        const header = name.trim();
+        // Chrome rejects a value on remove, and documents its append allowlist as lowercase and case-sensitive.
+        if (operation === 'remove') return { header, operation };
+        return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
+      });
     if (!requestHeaders.length) return;
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,

@@ -37,6 +37,46 @@ describe('buildRules', () => {
     ]);
   });
 
+  it('skips headers switched off; headers saved before the switch existed stay on', () => {
+    const groups = [
+      group(['off.com'], [{ name: 'X-Token', value: 'off', enabled: false }]),
+      group(['on.com'], [{ name: 'X-Token', value: 'on', enabled: true }]),
+      group(['saved.com'], [{ name: 'X-Token', value: 'saved' }]),
+      group(['mixed.com'], [
+        { name: 'X-Paused', value: 'p', enabled: false },
+        { name: 'X-Token', value: 'mixed' },
+      ]),
+    ];
+    expect(buildRules(groups, {}, resourceTypes)).toEqual([
+      rule(1, 3, 'on.com', 'X-Token', 'on'),
+      rule(2, 2, 'saved.com', 'X-Token', 'saved'),
+      rule(3, 1, 'mixed.com', 'X-Token', 'mixed'),
+    ]);
+  });
+
+  it('sends each header with its operation, appended names lowercased and removals without a value', () => {
+    const groups = [
+      group(['a.com'], [
+        { name: 'X-Token', value: 'a' },
+        { name: 'X-Set', value: 'b', operation: 'set' },
+        { name: ' Cookie ', value: 'c=1', operation: 'append' },
+        { name: 'Referer', value: 'not sent', operation: 'remove' },
+        // Chrome only appends to its allowlist, and would reject the whole update over this one.
+        { name: 'X-Custom', value: 'd', operation: 'append' },
+        { name: 'Origin', value: '', operation: 'remove', enabled: false },
+      ]),
+      group(['b.com'], [{ name: 'Authorization', value: 'e', operation: 'append' }]),
+    ];
+    const rules = buildRules(groups, {}, resourceTypes);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].action.requestHeaders).toStrictEqual([
+      { header: 'X-Token', operation: 'set', value: 'a' },
+      { header: 'X-Set', operation: 'set', value: 'b' },
+      { header: 'cookie', operation: 'append', value: 'c=1' },
+      { header: 'Referer', operation: 'remove' },
+    ]);
+  });
+
   it('targets either URL patterns or every request from the picked tabs, never both', () => {
     const header = { name: 'X-Token', value: 't' };
     const groups: Group[] = [
