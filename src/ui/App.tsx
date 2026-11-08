@@ -140,6 +140,7 @@ export function App() {
             groups={groups}
             tabs={tabs}
             tabSelections={tabSelections}
+            paused={paused}
             defaultUrl={isFullPage ? undefined : tabs.find((tab) => tab.current && /^https?:/.test(tab.url ?? ''))?.url}
           />
         )}

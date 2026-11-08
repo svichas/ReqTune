@@ -14,12 +14,14 @@ interface Props {
   tabSelections: TabSelections;
   /** What the field starts with: the active tab's URL, in the side panel. */
   defaultUrl?: string;
+  /** Pause all is on: nothing listed applies until it's off. */
+  paused: boolean;
 }
 
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 
 /** Answers "which groups would change a request to this URL?", and which header wins where they overlap. */
-export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Props) {
+export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '', paused }: Props) {
   const [url, setUrl] = useState(defaultUrl);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,7 +41,10 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '' }: Prop
   if (result === null) status = 'Enter a full URL, like https://example.com/api';
   else if (result) {
     const n = result.byPattern.length;
-    status = n ? `Matched by ${count(n, 'group')}` : "No group's patterns match this URL.";
+    status = n ? `Matched by ${count(n, 'group')}` : 'No group would change requests to this URL.';
+    // Chrome cancels the request before any header is changed.
+    if (result.blockedBy) status += `; ${result.blockedBy.name || 'Untitled group'} blocks every request to it`;
+    if (paused && (n || result.byTabs.length)) status += '. ReqTune is paused, so none of it applies until you resume.';
   }
 
   return (
@@ -136,7 +141,7 @@ function Match({ group, headers, responseHeaders, children }: GroupMatch & { chi
 function Headers({ headers }: { headers: HeaderMatch[] }) {
   return (
     <dl className={classes.headers}>
-      {headers.map(({ name, value, operation, wins, overriddenInTabs }, i) => (
+      {headers.map(({ name, value, operation, wins, partly, overriddenInTabs, onlyInTabs }, i) => (
         <div key={i} className={classes.header} data-overridden={wins === false || undefined}>
           <dt>{name}</dt>
           <dd>
@@ -166,9 +171,19 @@ function Headers({ headers }: { headers: HeaderMatch[] }) {
                 overridden
               </Text>
             )}
+            {partly && (
+              <Text span size="xs" ff="text" c="dimmed">
+                overridden for some requests
+              </Text>
+            )}
             {overriddenInTabs && (
               <Text span size="xs" ff="text" c="dimmed">
                 overridden in picked tabs
+              </Text>
+            )}
+            {onlyInTabs && (
+              <Text span size="xs" ff="text" c="dimmed">
+                only in picked tabs
               </Text>
             )}
           </dd>

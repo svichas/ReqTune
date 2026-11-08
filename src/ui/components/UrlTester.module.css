@@ -70,7 +70,7 @@
   margin: 0;
 }
 
-/* Chrome skips a header that a group higher in the list already sets, so the row recedes. */
+/* A change Chrome never makes, as a group higher in the list got to the header first, recedes. */
 .header[data-overridden] {
   color: var(--mantine-color-dimmed);
 }
