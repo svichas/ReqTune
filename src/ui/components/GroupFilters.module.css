@@ -1,0 +1,65 @@
+/* A quiet line under the headers, as wide as its text: the label, what the filters pick, and a chevron. */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding-inline: 2px;
+  border-radius: var(--mantine-radius-xs);
+  font-size: var(--mantine-font-size-xs);
+  line-height: var(--mantine-line-height-xs);
+  color: var(--mantine-color-dimmed);
+  transition: color var(--rt-duration-fast, 120ms) ease;
+}
+
+.toggle:hover {
+  color: var(--mantine-color-text);
+}
+
+.text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.label {
+  font-weight: 500;
+}
+
+/* A group limited to some requests says so in full text colour, so it stands out from the default. */
+.toggle[data-filtered] .summary {
+  color: var(--mantine-color-text);
+}
+
+.chevron {
+  flex: none;
+  transition: transform var(--rt-duration-base, 180ms) var(--rt-ease, ease);
+}
+
+[aria-expanded='true'] > .chevron {
+  transform: rotate(180deg);
+}
+
+/* Padding, never margins: the collapse measures this box, and margins would escape the measurement. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle,
+  .chevron {
+    transition: none;
+  }
+}

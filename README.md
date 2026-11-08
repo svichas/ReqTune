@@ -28,6 +28,7 @@
 - **Instant** — changes apply as you type (a `regex:` pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
 - **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
 - **Set, append or remove** — replace a header (the default), add your value to the one already there, or strip it out.
+- **Request filters** — limit a group to some kinds of requests, say Fetch/XHR or POST only, and leave page loads, images and the rest alone.
 - **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
@@ -63,6 +64,8 @@ Then load the `dist/` folder the same way.
 4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
 
 To stop every group at once, click the pause button in the header or press **Alt+Shift+P** (**Option+Shift+P** on a Mac). Until you resume, the same way or with **Resume** in the panel, no headers are changed and the toolbar icon shows **OFF**. Each group keeps its own switch, and you can keep editing. Change the shortcut at `chrome://extensions/shortcuts`.
+
+To limit a group to some kinds of requests, open **Filters** below its headers and pick resource types (**Page loads**, **Fetch/XHR**, **Scripts** and more; **Other** covers the rest, such as beacons and CSP reports), methods (**GET**, **POST**…) or both. A request must match a picked type and a picked method; a list with nothing picked matches everything, so a new group starts on **All requests**. Chrome only matches methods on HTTP requests, so picking one also leaves out WebSockets: a group with **WebSocket** as its only type then shows **Inactive**.
 
 Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
@@ -105,7 +108,7 @@ flowchart LR
   DNR -- sets headers on --> R(("Matching requests"))
 ```
 
-The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations), and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations) and method unless the group's Filters narrow them, and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
 
 A group that targets tabs becomes a single session rule with a `tabIds` condition and no URL filter, so it matches every request from those tabs; session rules are the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the picks live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 

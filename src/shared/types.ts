@@ -24,6 +24,10 @@ export interface Group {
    * tabs picked for the group in TabSelections, whatever its URL. Never both.
    */
   target?: 'patterns' | 'tabs';
+  /** Chrome's resource types the group applies to, like `xmlhttprequest`; absent or empty means all of them. */
+  resourceTypes?: string[];
+  /** Chrome's request methods the group applies to, lowercase like `post`; absent or empty means all of them. */
+  requestMethods?: string[];
 }
 
 /** Group id -> ids of the tabs picked for it; only used while its `target` is 'tabs'. */

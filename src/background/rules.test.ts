@@ -147,6 +147,39 @@ describe('buildRules', () => {
     expect(rules[1].condition).not.toHaveProperty('tabIds');
   });
 
+  it("limits a group's rules to its picked resource types and methods", () => {
+    const header = { name: 'X-Token', value: 't' };
+    const groups: Group[] = [
+      {
+        ...group(['api.com'], [header]),
+        resourceTypes: ['xmlhttprequest', 'not_a_type'],
+        requestMethods: ['post', 'put', 'POST'],
+      },
+      { ...group([], [header]), id: 'tabs', target: 'tabs', requestMethods: ['get'] },
+    ];
+    expect(buildRules(groups, { tabs: [3] }, resourceTypes).map((rule) => rule.condition)).toEqual([
+      { regexFilter: patternToRegex('api.com'), resourceTypes: ['xmlhttprequest'], requestMethods: ['post', 'put'] },
+      { tabIds: [3], resourceTypes, requestMethods: ['get'] },
+    ]);
+  });
+
+  it('applies to every resource type and method while a group picks none', () => {
+    const header = { name: 'X-Token', value: 't' };
+    const groups: Group[] = [
+      group(['a.com'], [header]),
+      { ...group(['b.com'], [header]), resourceTypes: [], requestMethods: [] },
+      // Only values Chrome doesn't know: it would reject them, so the group keeps every type and method.
+      { ...group(['c.com'], [header]), resourceTypes: ['not_a_type'], requestMethods: ['POST'] },
+    ];
+    const rules = buildRules(groups, {}, resourceTypes);
+    expect(rules).toEqual([
+      rule(1, 3, 'a.com', 'X-Token', 't'),
+      rule(2, 2, 'b.com', 'X-Token', 't'),
+      rule(3, 1, 'c.com', 'X-Token', 't'),
+    ]);
+    for (const { condition } of rules) expect(condition).not.toHaveProperty('requestMethods');
+  });
+
   it("keeps groups saved by 0.1.3's \"Selected tabs\" on their URL patterns", () => {
     // 0.1.3 limited a group to patterns *and* tabs with `limitToTabs`. Read as targeting tabs, its headers (often a
     // token) would start going to every site those tabs talk to; on patterns they stay with the sites named.

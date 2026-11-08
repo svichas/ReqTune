@@ -7,6 +7,7 @@ import { canAppendRequestHeader, isValidRequestHeader, isValidResponseHeader } f
 import { COMMON_HEADERS, COMMON_RESPONSE_HEADERS } from '../headers';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
+import { GroupFilters } from './GroupFilters';
 import { type GroupActions, GroupMenu } from './GroupMenu';
 import { GroupTarget } from './GroupTarget';
 import { HeaderList } from './HeaderList';
@@ -51,7 +52,10 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   const headers =
     group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length +
     (group.responseHeaders ?? []).filter((h) => h.enabled !== false && isValidResponseHeader(h)).length;
-  const inactive = group.enabled && (targets === 0 || headers === 0);
+  // Chrome never matches a WebSocket request by method, so a WebSocket-only group with methods picked sends nothing.
+  const types = group.resourceTypes ?? [];
+  const noRequests = !!group.requestMethods?.length && types.length > 0 && types.every((type) => type === 'websocket');
+  const inactive = group.enabled && (targets === 0 || headers === 0 || noRequests);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
   const onHeaderClick = (e: MouseEvent<HTMLElement>) => {
@@ -139,6 +143,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             required={false}
             onChange={(next) => onChange({ ...group, responseHeaders: next })}
           />
+          <GroupFilters group={group} onChange={onChange} />
         </div>
       </Collapse>
     </div>
