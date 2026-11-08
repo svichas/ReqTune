@@ -71,6 +71,11 @@ input.input[data-masked] {
   font-size: var(--mantine-font-size-xs);
 }
 
+/* Value preset labels stay on one line, so their list may be wider than a narrow value cell. */
+.presets {
+  min-width: max-content;
+}
+
 .error {
   padding: 0 10px 8px;
   font-size: 11px;

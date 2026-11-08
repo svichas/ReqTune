@@ -3,7 +3,7 @@ import { ActionIcon, Autocomplete, Checkbox, TextInput, Tooltip } from '@mantine
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
 import { canAppendRequestHeader, isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
-import { COMMON_HEADERS, isSecretHeader } from '../headers';
+import { COMMON_HEADERS, isSecretHeader, valuePresets } from '../headers';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 import { OperationMenu } from './OperationMenu';
@@ -16,6 +16,7 @@ interface Props {
 
 const inputClassNames = { input: classes.input, error: classes.error };
 const nameClassNames = { ...inputClassNames, option: classes.option };
+const presetClassNames = { ...inputClassNames, dropdown: classes.presets };
 
 // Remove sends no value, so its row hides the value field (keeping what was typed, for switching back).
 const hasValue = (header: HeaderEntry) => header.operation !== 'remove';
@@ -47,8 +48,10 @@ export function HeaderList({ headers, required, onChange }: Props) {
   const onKeyDown = (i: number, field: 'name' | 'value') => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
-      // A highlighted suggestion owns this Enter; picking it moves on to the value via onOptionSubmit.
-      if (e.currentTarget.getAttribute('aria-activedescendant')) return;
+      // A highlighted suggestion owns this Enter; picking a name moves on to the value via onOptionSubmit. Mantine
+      // leaves aria-activedescendant on the last option arrowed to after the highlight is gone, so check the option.
+      const active = e.currentTarget.getAttribute('aria-activedescendant');
+      if (active && document.getElementById(active)?.hasAttribute('data-combobox-selected')) return;
       if (field === 'name' && hasValue(headers[i])) focus(`value${i}`);
       else insert(i + 1);
     } else if (
@@ -75,6 +78,21 @@ export function HeaderList({ headers, required, onChange }: Props) {
         const secret = isSecretHeader(name);
         const shown = revealed[i] === header.name;
         const on = header.enabled !== false;
+        const presets = valuePresets(name);
+        const presetLabel = (value: string) => presets.find((preset) => preset.value === value)?.label ?? '';
+        const valueProps = {
+          ref: ref(`value${i}`),
+          variant: 'unstyled',
+          className: classes.value,
+          display: hasValue(header) ? undefined : 'none',
+          'aria-label': `Header ${i + 1} value`,
+          placeholder: 'value',
+          autoComplete: 'off',
+          spellCheck: false,
+          value: header.value,
+          error: isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks",
+          onKeyDown: onKeyDown(i, 'value'),
+        };
         return (
           <div key={i} className={classes.row} data-off={!on || undefined}>
             <Tooltip label="Send header">
@@ -109,40 +127,50 @@ export function HeaderList({ headers, required, onChange }: Props) {
               value={header.name}
               error={nameError(name, header.operation)}
               onChange={(value) => update(i, { name: value })}
-              onOptionSubmit={() => focus(`value${i}`)}
+              // After the render, since naming a row User-Agent swaps in a value field with presets.
+              onOptionSubmit={() => focusAfterRender(`value${i}`)}
               onKeyDown={onKeyDown(i, 'name')}
             />
-            <TextInput
-              ref={ref(`value${i}`)}
-              variant="unstyled"
-              className={classes.value}
-              display={hasValue(header) ? undefined : 'none'}
-              classNames={inputClassNames}
-              aria-label={`Header ${i + 1} value`}
-              placeholder="value"
-              autoComplete="off"
-              spellCheck={false}
-              value={header.value}
-              data-masked={(secret && !shown) || undefined}
-              rightSectionWidth={32}
-              rightSectionPointerEvents="all"
-              rightSection={
-                secret ? (
-                  <Tooltip label={shown ? 'Hide value' : 'Show value'}>
-                    <ActionIcon
-                      size={24}
-                      aria-label={`${shown ? 'Hide' : 'Show'} header ${i + 1} value`}
-                      onClick={() => setRevealed({ ...revealed, [i]: shown ? undefined : header.name })}
-                    >
-                      {shown ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-                    </ActionIcon>
-                  </Tooltip>
-                ) : undefined
-              }
-              error={isValidHeaderValue(header.value) ? undefined : "Values can't contain line breaks"}
-              onChange={(e) => update(i, { value: e.currentTarget.value })}
-              onKeyDown={onKeyDown(i, 'value')}
-            />
+            {presets.length ? (
+              <Autocomplete
+                {...valueProps}
+                classNames={presetClassNames}
+                // The options are the values, so picking one fills it in; the list shows and matches their labels.
+                data={presets.map((preset) => preset.value)}
+                renderOption={({ option }) => presetLabel(option.value)}
+                filter={({ options, search }) => {
+                  // A picked preset lists them all, so switching to another doesn't mean clearing the field first.
+                  if (presets.some((preset) => preset.value === search)) return options;
+                  const query = search.trim().toLowerCase();
+                  return options.filter((option) => 'value' in option && presetLabel(option.value).toLowerCase().includes(query));
+                }}
+                // Mantine's default scroll area would cut off the last presets.
+                withScrollArea={false}
+                onChange={(value) => update(i, { value })}
+              />
+            ) : (
+              <TextInput
+                {...valueProps}
+                classNames={inputClassNames}
+                data-masked={(secret && !shown) || undefined}
+                rightSectionWidth={32}
+                rightSectionPointerEvents="all"
+                rightSection={
+                  secret ? (
+                    <Tooltip label={shown ? 'Hide value' : 'Show value'}>
+                      <ActionIcon
+                        size={24}
+                        aria-label={`${shown ? 'Hide' : 'Show'} header ${i + 1} value`}
+                        onClick={() => setRevealed({ ...revealed, [i]: shown ? undefined : header.name })}
+                      >
+                        {shown ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  ) : undefined
+                }
+                onChange={(e) => update(i, { value: e.currentTarget.value })}
+              />
+            )}
             <RemoveButton label={`Remove header ${i + 1}`} onClick={() => remove(i)} />
           </div>
         );
