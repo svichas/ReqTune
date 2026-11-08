@@ -1,16 +1,22 @@
-import { getGroups, getTabSelections, setSyncError, watchKey } from '../shared/storage';
+import { getGroups, getPaused, getTabSelections, setPaused, setSyncError, watchKey } from '../shared/storage';
 import { buildRules } from './rules';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
 
 const ids = (rules: chrome.declarativeNetRequest.Rule[]) => rules.map((rule) => rule.id);
+// setTitle has no way back to the manifest's tooltip, so resuming sets it from here.
+const defaultTitle = (chrome.runtime.getManifest() as chrome.runtime.ManifestV3).action?.default_title ?? '';
 
 async function applyRules(): Promise<void> {
   const dnr = chrome.declarativeNetRequest;
   try {
-    const [groups, tabSelections] = await Promise.all([getGroups(), getTabSelections()]);
+    const [groups, tabSelections, paused] = await Promise.all([getGroups(), getTabSelections(), getPaused()]);
+    await Promise.all([
+      chrome.action.setBadgeText({ text: paused ? 'OFF' : '' }),
+      chrome.action.setTitle({ title: paused ? 'ReqTune is paused' : defaultTitle }),
+    ]);
     // Every type must be listed: without resourceTypes Chrome skips main_frame requests.
-    const rules = buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
+    const rules = paused ? [] : buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
     // One regex over Chrome's compile-size limit would fail the whole update, so those rules are left out.
     const checks = await Promise.all(
       rules.map(({ condition: { regexFilter } }) =>
@@ -47,4 +53,8 @@ sync();
 chrome.runtime.onInstalled.addListener(sync);
 chrome.runtime.onStartup.addListener(sync);
 watchKey('local', 'groups', sync);
+watchKey('local', 'paused', sync);
 watchKey('session', 'tabSelections', sync);
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'toggle-pause') await setPaused(!(await getPaused()));
+});
