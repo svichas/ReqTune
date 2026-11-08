@@ -9,7 +9,10 @@ export interface HeaderEntry {
   enabled?: boolean;
 }
 
-/** URL patterns plus the headers applied to requests matching any of them, and to their responses. */
+/**
+ * URL patterns plus what to do with the requests matching any of them: change headers on them and their responses, or
+ * block them.
+ */
 export interface Group {
   id: string;
   name: string;
@@ -20,10 +23,12 @@ export interface Group {
   /** Set on the responses to those requests; absent means none. */
   responseHeaders?: HeaderEntry[];
   /**
-   * Which requests get the headers: those matching `patterns`, from any tab (the default), or every request from the
-   * tabs picked for the group in TabSelections, whatever its URL. Never both.
+   * Which requests the group applies to: those matching `patterns`, from any tab (the default), or every request from
+   * the tabs picked for the group in TabSelections, whatever its URL. Never both.
    */
   target?: 'patterns' | 'tabs';
+  /** Change the headers (the default), or block the requests; a blocking group keeps its headers. */
+  action?: 'headers' | 'block';
   /** Chrome's resource types the group applies to, like `xmlhttprequest`; absent or empty means all of them. */
   resourceTypes?: string[];
   /** Chrome's request methods the group applies to, lowercase like `post`; absent or empty means all of them. */

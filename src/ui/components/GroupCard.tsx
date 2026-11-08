@@ -1,5 +1,5 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from 'react';
-import { ActionIcon, Collapse, Switch, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Collapse, SegmentedControl, Switch, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
@@ -44,8 +44,10 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   }, []);
 
   // Same filters as the worker's buildRules: without a usable target (a valid pattern, or a picked tab that is still
-  // open) and a valid header that's switched on, the group sends nothing. Closed tabs make no more requests.
+  // open) and, unless it blocks, a valid header that's switched on, the group does nothing. Closed tabs make no more
+  // requests.
   const byTabs = group.target === 'tabs';
+  const blocks = group.action === 'block';
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
@@ -55,7 +57,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   // Chrome never matches a WebSocket request by method, so a WebSocket-only group with methods picked sends nothing.
   const types = group.resourceTypes ?? [];
   const noRequests = !!group.requestMethods?.length && types.length > 0 && types.every((type) => type === 'websocket');
-  const inactive = group.enabled && (targets === 0 || headers === 0 || noRequests);
+  const inactive = group.enabled && (targets === 0 || (!blocks && headers === 0) || noRequests);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
   const onHeaderClick = (e: MouseEvent<HTMLElement>) => {
@@ -92,12 +94,14 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
           />
         </div>
         {/* Always rendered, one line in both states, so collapsing never changes the header's height. */}
-        <Text span size="xs" c={inactive ? 'orange' : 'dimmed'} className={classes.meta}>
+        <Text span size="xs" c={inactive || blocks ? 'orange' : 'dimmed'} className={classes.meta}>
           {inactive ? (
             <>
               <IconAlertTriangle size={14} />
               Inactive
             </>
+          ) : blocks ? (
+            `Blocks ${count(targets, byTabs ? 'tab' : 'URL')}`
           ) : (
             `${count(targets, byTabs ? 'tab' : 'URL')} · ${count(headers, 'header')}`
           )}
@@ -126,23 +130,42 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
             onChange={onChange}
             onTabIdsChange={onTabIdsChange}
           />
-          <HeaderList
-            label="Request headers"
-            headers={group.headers}
-            suggestions={COMMON_HEADERS}
-            canAppend={canAppendRequestHeader}
-            required={group.enabled && headers === 0}
-            onChange={(next) => onChange({ ...group, headers: next })}
+          <SegmentedControl
+            className={classes.action}
+            color="tune"
+            aria-label="Action"
+            data={[
+              { value: 'headers', label: 'Set headers' },
+              { value: 'block', label: 'Block' },
+            ]}
+            value={group.action ?? 'headers'}
+            onChange={(action) => onChange({ ...group, action })}
           />
-          {/* Required shows once, on the request list: a header in either list will do. */}
-          <HeaderList
-            label="Response headers"
-            headers={group.responseHeaders ?? []}
-            suggestions={COMMON_RESPONSE_HEADERS}
-            canAppend={() => true}
-            required={false}
-            onChange={(next) => onChange({ ...group, responseHeaders: next })}
-          />
+          {blocks ? (
+            <Text size="xs" c="dimmed" px={2}>
+              Matching requests are cancelled before they're sent.
+            </Text>
+          ) : (
+            <>
+              <HeaderList
+                label="Request headers"
+                headers={group.headers}
+                suggestions={COMMON_HEADERS}
+                canAppend={canAppendRequestHeader}
+                required={group.enabled && headers === 0}
+                onChange={(next) => onChange({ ...group, headers: next })}
+              />
+              {/* Required shows once, on the request list: a header in either list will do. */}
+              <HeaderList
+                label="Response headers"
+                headers={group.responseHeaders ?? []}
+                suggestions={COMMON_RESPONSE_HEADERS}
+                canAppend={() => true}
+                required={false}
+                onChange={(next) => onChange({ ...group, responseHeaders: next })}
+              />
+            </>
+          )}
           <GroupFilters group={group} onChange={onChange} />
         </div>
       </Collapse>

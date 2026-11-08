@@ -25,7 +25,8 @@ export function buildRules(
     if (!group.enabled) return;
     const requestHeaders = headerInfos(group.headers, isValidRequestHeader);
     const responseHeaders = headerInfos(group.responseHeaders ?? [], isValidResponseHeader);
-    if (!requestHeaders.length && !responseHeaders.length) return;
+    const block = group.action === 'block';
+    if (!block && !requestHeaders.length && !responseHeaders.length) return;
     // Picked filters narrow the rule; none leaves every request, as before (Chrome rejects empty lists). Values
     // Chrome doesn't know are dropped: one would fail the whole update.
     const types = resourceTypes.filter((type) => group.resourceTypes?.includes(type));
@@ -35,14 +36,16 @@ export function buildRules(
     const rule = (condition: chrome.declarativeNetRequest.RuleCondition): chrome.declarativeNetRequest.Rule => ({
       id: rules.length + 1,
       // Chrome applies higher priorities first, across all rule sets, and ignores later sets of the same header:
-      // earlier groups win.
+      // earlier groups win. Blocks are checked before any header is set, so a block wins wherever its group sits.
       priority: groups.length - index,
       // Chrome rejects an empty list, so whichever of the two has nothing to change is left out.
-      action: {
-        type: 'modifyHeaders',
-        ...(requestHeaders.length && { requestHeaders }),
-        ...(responseHeaders.length && { responseHeaders }),
-      },
+      action: block
+        ? { type: 'block' }
+        : {
+            type: 'modifyHeaders',
+            ...(requestHeaders.length && { requestHeaders }),
+            ...(responseHeaders.length && { responseHeaders }),
+          },
       condition: {
         ...condition,
         resourceTypes: types.length ? types : resourceTypes,
