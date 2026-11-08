@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ReqTune",
-  "version": "0.1.5",
-  "description": "Set request headers on URLs matching wildcard patterns, organized in groups.",
+  "version": "0.2.0",
+  "description": "Change HTTP request and response headers, or block requests, on the URLs you choose, in groups you switch on and off.",
   "permissions": ["declarativeNetRequestWithHostAccess", "storage", "sidePanel", "favicon"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js", "type": "module" },

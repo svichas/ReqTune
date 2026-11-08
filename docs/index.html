@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ReqTune: set request headers on the URLs you choose</title>
-<meta name="description" content="ReqTune is a free, open-source Chrome extension that sets HTTP request headers on the URLs you choose, in groups you switch on and off from the side panel.">
+<title>ReqTune: change HTTP headers on the URLs you choose</title>
+<meta name="description" content="ReqTune is a free, open-source Chrome extension that sets, appends or removes HTTP request and response headers on the URLs you choose, or blocks those requests, in groups you switch on and off from the side panel.">
 <meta name="color-scheme" content="light dark">
 <link rel="canonical" href="https://svichas.github.io/ReqTune/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect x='4' y='4' width='120' height='120' rx='28' fill='%233358c8'/%3E%3Cpath d='M28 64H36M74 64H100M84 48L100 64L84 80' fill='none' stroke='%23fff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='48' y='40' width='14' height='48' rx='7' fill='%23fff'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ReqTune">
-<meta property="og:title" content="ReqTune: set request headers on the URLs you choose">
-<meta property="og:description" content="A free, open-source Chrome extension. Groups of request headers you switch on and off, right from Chrome's side panel.">
+<meta property="og:title" content="ReqTune: change HTTP headers on the URLs you choose">
+<meta property="og:description" content="A free, open-source Chrome extension. Set, append or remove request and response headers, or block requests, in groups you switch on and off from Chrome's side panel.">
 <meta property="og:url" content="https://svichas.github.io/ReqTune/">
 <meta property="og:image" content="https://svichas.github.io/ReqTune/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="ReqTune: set request headers on the URLs you choose.">
+<meta property="og:image:alt" content="ReqTune: change HTTP headers on the URLs you choose.">
 <meta name="twitter:card" content="summary_large_image">
 <style>
   /* Tokens from brand.md (src/ui/brand.ts is the source of truth). */
@@ -113,6 +113,7 @@
   .method { margin-right: 4px; color: var(--link); font-weight: 600; }
   .req-h { color: var(--dimmed); white-space: nowrap; }
   .req-h.add { color: var(--added); }
+  .req-h.del { text-decoration: line-through; }
   .req-note { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider); color: var(--dimmed); font: 500 13px/1.4 var(--sans); }
   .req-note .i { width: 16px; height: 16px; color: var(--added); }
   @media (max-width: 900px) {
@@ -240,6 +241,13 @@
   <symbol id="i-bug" viewBox="0 0 24 24"><path d="M9 9v-1a3 3 0 0 1 6 0v1"/><path d="M8 9h8a6 6 0 0 1 1 3v3a5 5 0 0 1 -10 0v-3a6 6 0 0 1 1 -3"/><path d="M3 13l4 0"/><path d="M17 13l4 0"/><path d="M12 20l0 -6"/><path d="M4 19l3.35 -2"/><path d="M20 19l-3.35 -2"/><path d="M4 7l3.75 2.4"/><path d="M20 7l-3.75 2.4"/></symbol>
   <symbol id="i-pr" viewBox="0 0 24 24"><path d="M4 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M16 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6 8l0 8"/><path d="M11 6h5a2 2 0 0 1 2 2v8"/><path d="M14 9l-3 -3l3 -3"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245"/></symbol>
+  <symbol id="i-plus-minus" viewBox="0 0 24 24"><path d="M4 7h6"/><path d="M7 4v6"/><path d="M20 18h-6"/><path d="M5 19l14 -14"/></symbol>
+  <symbol id="i-arrows-lr" viewBox="0 0 24 24"><path d="M21 17l-18 0"/><path d="M6 10l-3 -3l3 -3"/><path d="M3 7l18 0"/><path d="M18 20l3 -3l-3 -3"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M5.7 5.7l12.6 12.6"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/><path d="M14 6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -12"/></symbol>
+  <symbol id="i-world-search" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 0 -9 9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h7.9"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a16.984 16.984 0 0 1 2.574 8.62"/><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M20.2 20.2l1.8 1.8"/></symbol>
+  <symbol id="i-transfer" viewBox="0 0 24 24"><path d="M20 10h-16l5.5 -6"/><path d="M4 14h16l-5.5 6"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12l14 0"/><path d="M13 18l6 -6"/><path d="M13 6l6 6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></symbol>
 </svg>
@@ -261,8 +269,8 @@
   <section class="wrap hero" aria-labelledby="hero-title">
     <div>
       <a class="pill" href="#open-source">Free and open source · MIT licensed <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-      <h1 id="hero-title">Set request headers on the URLs you choose.</h1>
-      <p class="lead">Pair wildcard URL patterns with the headers to send, in groups you switch on and off from Chrome's side panel. Chrome applies them natively, and nothing leaves your device.</p>
+      <h1 id="hero-title">Change HTTP headers on the URLs you choose.</h1>
+      <p class="lead">Set, append or remove request and response headers, or block requests, on the URL patterns you pick, in groups you switch on and off from Chrome's side panel. Chrome applies them natively, and nothing leaves your device.</p>
       <div class="ctas">
         <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/reqtune/mbfeljmpmenkffmmmpakpfmfbohgbcmm"><svg class="i" aria-hidden="true"><use href="#i-chrome"/></svg>Add to Chrome</a>
         <a class="btn btn-secondary" href="https://github.com/svichas/ReqTune/releases/latest"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Download latest release</a>
@@ -273,14 +281,15 @@
     <div class="shot">
       <picture>
         <source srcset="panel-dark.png" media="(prefers-color-scheme: dark)">
-        <img src="panel-light.png" width="360" height="540" fetchpriority="high" alt="The ReqTune side panel. A Staging API group sends Authorization and X-Env headers to *.staging.example.com/api/* and localhost:3000; two more groups sit below it, one switched off.">
+        <img src="panel-light.png" width="360" height="540" fetchpriority="high" alt="The ReqTune side panel. A Staging API group sets Authorization, appends to Accept-Language and removes Referer on *.staging.example.com/api/* Fetch/XHR requests, with X-Debug switched off and a CORS response header; more groups sit below it.">
       </picture>
-      <div class="req" role="img" aria-label="Example: a GET request to app.staging.example.com/api/orders gets the Authorization and X-Env headers from the Staging API group.">
+      <div class="req" role="img" aria-label="Example: on a GET request to app.staging.example.com/api/orders, the Staging API group sets Authorization, appends el to Accept-Language and removes Referer.">
         <div class="req-url"><span class="method">GET</span>app.staging.example.com/api/orders</div>
         <div class="req-h">Accept: application/json</div>
         <div class="req-h add">+ Authorization: Bearer ••••••••</div>
-        <div class="req-h add">+ X-Env: staging</div>
-        <div class="req-note"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>2 headers set by Staging API</div>
+        <div class="req-h add">+ Accept-Language: en, el</div>
+        <div class="req-h del">− Referer: https://app.staging.example.com/</div>
+        <div class="req-note"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>3 headers changed by Staging API</div>
       </div>
     </div>
   </section>
@@ -289,15 +298,21 @@
     <div class="wrap">
       <p class="kicker">Features</p>
       <h2 id="features-title">Built for everyday web development</h2>
-      <p class="sub">Point a frontend at staging, send a token to localhost, flip a feature flag or turn on debug tracing, without a proxy or a rebuild.</p>
+      <p class="sub">Point a frontend at staging, send a token to localhost, try a new CSP, block analytics or turn on debug tracing, without a proxy or a rebuild.</p>
       <ul class="features">
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg></span><h3>Groups</h3><p>Pair URL patterns with the headers to send, and switch each group on or off.</p></li>
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-asterisk"/></svg></span><h3>Wildcard patterns</h3><p><code>*.example.com/api/*</code>, <code>localhost:3000</code>, <code>/graphql</code> and more.</p></li>
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg></span><h3>Instant and native</h3><p>Changes apply as you type; a URL pattern once you leave its field. Chrome sets the headers itself, with no JavaScript in the request path.</p></li>
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-window"/></svg></span><h3>URL patterns or tabs</h3><p>Target URLs, or send a group's headers on every request from the tabs you pick.</p></li>
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-sort"/></svg></span><h3>Priority you control</h3><p>When groups set the same header, the one higher in the list wins.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg></span><h3>Groups</h3><p>Pair URL patterns with the headers to change, and switch each group on or off. When two change the same header, the one higher in the list wins.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-plus-minus"/></svg></span><h3>Set, append or remove</h3><p>Replace a header, add your value to it or strip it out. Untick a single header to pause it without deleting it.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-arrows-lr"/></svg></span><h3>Response headers</h3><p>Change headers on the responses too, say a <code>Content-Security-Policy</code> to try or an <code>X-Frame-Options</code> to drop.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></span><h3>Block requests</h3><p>Cancel the requests a group matches, and see how a page copes without a script, an API call or analytics.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-asterisk"/></svg></span><h3>Wildcard or regex patterns</h3><p><code>*.example.com/api/*</code>, <code>localhost:3000</code>, <code>/graphql</code> and more, or a regular expression after <code>regex:</code>.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-window"/></svg></span><h3>URL patterns or tabs</h3><p>Target URLs, or change every request from the tabs you pick, say the one you're testing in.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-filter"/></svg></span><h3>Request filters</h3><p>Limit a group to Fetch/XHR, page loads or other types of request, and to methods like <code>POST</code>.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-pause"/></svg></span><h3>Pause all</h3><p>Stop every group at once from the header or with Alt+Shift+P, and resume with each group as you left it.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-world-search"/></svg></span><h3>URL tester</h3><p>Paste a URL to see which groups would change its requests, through which pattern, and whose header wins.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-transfer"/></svg></span><h3>Export and import</h3><p>Back up groups or hand them to a teammate as a JSON file. Secret values stay out unless you include them.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg></span><h3>Instant and native</h3><p>Changes apply as you type; a URL pattern once you leave its field. Chrome changes the headers itself, with no JavaScript in the request path.</p></li>
         <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg></span><h3>Screen-share safe</h3><p><code>Authorization</code>, <code>Cookie</code> and other token-like values show as dots until you reveal them.</p></li>
-        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-keyboard"/></svg></span><h3>Comfortable editing</h3><p>Header name suggestions, duplicate groups, undo deletes, and Enter to add a row.</p></li>
+        <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-keyboard"/></svg></span><h3>Comfortable editing</h3><p>Header name suggestions, User-Agent presets, duplicate groups, undo deletes, and Enter to add a row.</p></li>
         <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-sidebar"/></svg></span><h3>Side panel or full page</h3><p>The panel stays open while you browse. Open a full page when long tokens need more room.</p></li>
         <li class="card"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><h3>Private</h3><p>Everything stays in local extension storage. ReqTune makes no network requests and collects nothing.</p></li>
       </ul>
@@ -314,6 +329,7 @@
           <li>In the host, <code>*</code> never crosses a <code>/</code>, so <code>example.com</code> can't match <code>example.com.evil.com</code>.</li>
           <li>No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains <code>?</code>.</li>
           <li>Leave out default ports (<code>:80</code>, <code>:443</code>). Chrome removes them from URLs, so they never match.</li>
+          <li>Need more? Start with <code>regex:</code> for a regular expression, which Chrome reads as RE2.</li>
         </ul>
       </div>
       <div class="card table">
@@ -327,6 +343,7 @@
             <tr><td><code>https://example.com/*</code></td><td>HTTPS requests only</td></tr>
             <tr><td><code>/graphql</code></td><td>That path on any host</td></tr>
             <tr><td><code>example.com/search?q=*</code></td><td>Paths whose query string matches too</td></tr>
+            <tr><td><code>regex:^https://(api|admin)\.</code></td><td>URLs the regular expression matches</td></tr>
           </tbody>
         </table>
       </div>
@@ -337,13 +354,13 @@
     <div class="wrap">
       <p class="kicker">How it works</p>
       <h2 id="how-title">Chrome does the heavy lifting</h2>
-      <p class="sub">ReqTune turns your groups into <code>declarativeNetRequest</code> rules, so Chrome itself sets the headers. No proxy, no content scripts, no JavaScript in the request path.</p>
+      <p class="sub">ReqTune turns your groups into <code>declarativeNetRequest</code> rules, so Chrome itself changes the headers. No proxy, no content scripts, no JavaScript in the request path.</p>
       <ol class="flow">
         <li class="card"><b>Side panel</b><span>You edit groups, in React and Mantine</span></li>
         <li class="card"><b><code>chrome.storage<wbr>.local</code></b><span>Groups are saved on your device</span></li>
         <li class="card"><b>Service worker</b><span>Turns your patterns into rules</span></li>
-        <li class="card"><b><code>declarative<wbr>NetRequest</code></b><span><code>modifyHeaders</code> rules, swapped atomically</span></li>
-        <li class="card"><b>Matching requests</b><span>Chrome sets your headers</span></li>
+        <li class="card"><b><code>declarative<wbr>NetRequest</code></b><span><code>modifyHeaders</code> and block rules, swapped atomically</span></li>
+        <li class="card"><b>Matching requests</b><span>Chrome changes your headers, or blocks them</span></li>
       </ol>
       <dl class="facts">
         <div><dt>Compiled, not interpreted</dt><dd>Each URL pattern compiles to an anchored regex, and group order becomes rule priority. In a group that appends to a header, patterns that can match one URL share a rule, so each append happens once.</dd></div>

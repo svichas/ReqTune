@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <strong>Set HTTP request headers on the URLs you choose — in groups you can switch on and off, right from Chrome's side panel.</strong>
+  <strong>Change HTTP request and response headers on the URLs you choose, or block those requests — in groups you can switch on and off, right from Chrome's side panel.</strong>
 </p>
 
 <p align="center">
@@ -14,29 +14,40 @@
 </p>
 
 <p align="center">
-  <img src="docs/panel-light.png" width="340" alt="ReqTune side panel in the light theme">
+  <img src="docs/panel-light.png" width="340" alt="ReqTune side panel in the light theme, with a group's request and response headers">
   &nbsp;
-  <img src="docs/panel-dark.png" width="340" alt="ReqTune side panel in the dark theme">
+  <img src="docs/panel-dark.png" width="340" alt="ReqTune side panel in the dark theme, testing which groups change a URL's requests">
 </p>
 
 ## Features
 
-- **Groups** — pair URL patterns with the headers to send, and flip each group on or off.
-- **Response headers** — change headers on the responses too, say a `Content-Security-Policy` you want to try before it ships.
-- **Pause single headers** — untick the box beside a header to stop sending it without deleting it.
-- **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
-- **Instant** — changes apply as you type (a URL pattern once you leave its field); Chrome sets the headers natively, with no JavaScript in the request path.
-- **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to send its headers on every request from the tabs you pick, say the one you're testing in.
+**Headers**
+
 - **Set, append or remove** — replace a header (the default), add your value to the one already there, or strip it out.
+- **Response headers** — change headers on the responses too, say a `Content-Security-Policy` you want to try before it ships, or an `X-Frame-Options` to drop.
+- **Pause single headers** — untick the box beside a header to stop sending it without deleting it.
+- **User-Agent presets** — a `User-Agent` row's value field suggests common Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
+- **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
+
+**Which requests**
+
+- **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
+- **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to change every request from the tabs you pick, say the one you're testing in.
 - **Request filters** — limit a group to some kinds of requests, say Fetch/XHR or POST only, and leave page loads, images and the rest alone.
 - **Block requests** — switch a group to **Block** to cancel the requests it matches instead, and see how a page copes without a script, an API call or analytics.
-- **Priority you control** — when groups set the same header, the one higher in the list wins. Reorder from the ⋯ menu.
+
+**Control**
+
+- **Groups** — pair URL patterns with the headers to change, and flip each group on or off.
+- **Priority you control** — when groups change the same header, the one higher in the list wins. Reorder from the ⋯ menu.
 - **Pause all** — stop every group at once from the header or with Alt+Shift+P, and resume with each group's own switch as you left it. The toolbar icon shows OFF while paused.
 - **URL tester** — paste a URL to see which groups would change its requests, through which pattern, and whose header wins where they overlap.
-- **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
-- **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
-- **User-Agent presets** — a `User-Agent` row's value field suggests common Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
+- **Instant** — changes apply as you type (a URL pattern once you leave its field); Chrome changes the headers natively, with no JavaScript in the request path.
+
+**Everyday**
+
 - **Export and import** — save groups to a JSON file to back them up or hand them to a teammate, and import them on any machine. Secret values stay out of the file unless you choose to include them.
+- **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
 - **Side panel or full page** — the panel stays open while you browse; open it as a full page when long tokens need more room, and edits stay in sync between the two. Light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
@@ -57,31 +68,37 @@ npm install
 npm run build
 ```
 
-Then load the `dist/` folder the same way.
+Then load the `dist/` folder the same way. After pulling changes, rebuild and click the reload arrow on ReqTune at `chrome://extensions`: Chrome only reads a new `manifest.json` then.
 
 ## Usage
 
 1. Click the ReqTune icon in the toolbar to open the side panel (pin it from the puzzle-piece menu for one-click access).
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
-3. Use the switch to pause a group, and the ⋯ menu to duplicate, move or delete it.
-4. To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make gets the headers, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then.
-5. To see how a page copes without a script, an API call or analytics, switch the group from **Set headers** to **Block**: Chrome cancels the requests it matches before they're sent. A block beats every group's headers, wherever it sits in the list, and the header rows stay for when you switch back. Careful with **Tabs**: a group that blocks a tab blocks its page loads too, unless its Filters leave them out, so a reload leaves the tab blank but for Chrome's blocked-page error. That's why a blocking group doesn't tick the tab you're on for you.
+3. Use the switch to pause a group, and the ⋯ menu to duplicate, move, export or delete it.
 
-To stop every group at once, click the pause button in the header or press **Alt+Shift+P** (**Option+Shift+P** on a Mac). Until you resume, the same way or with **Resume** in the panel, no headers are changed and the toolbar icon shows **OFF**. Each group keeps its own switch, and you can keep editing. Change the shortcut at `chrome://extensions/shortcuts`.
+A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open. Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
-To limit a group to some kinds of requests, open **Filters** below its headers and pick resource types (**Page loads**, **Fetch/XHR**, **Scripts** and more; **Other** covers the rest, such as beacons and CSP reports), methods (**GET**, **POST**…) or both. A request must match a picked type and a picked method; a list with nothing picked matches everything, so a new group starts on **All requests**. Chrome only matches methods on HTTP requests, so picking one also leaves out WebSockets: a group with **WebSocket** as its only type then shows **Inactive**.
+### Headers
 
-Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
-
-The button before each header's name picks what happens to that header: **Set** (`=`, the default) replaces it, **Append** (`+`) adds your value to the one already there, and **Remove** (`−`) strips it, so the row needs no value. On requests, Chrome only appends to a fixed list of standard headers, such as `Accept`, `Accept-Language`, `Cookie`, `User-Agent` and `X-Forwarded-For`; on any other, the row shows an error and isn't sent. Appends add up: one from a group lower in the list still adds to a header that a group above it sets.
+The box at the start of each header row switches that header on or off, and the button after it picks what happens to it: **Set** (`=`, the default) replaces it, **Append** (`+`) adds your value to the one already there, and **Remove** (`−`) strips it, so the row needs no value. On requests, Chrome only appends to a fixed list of standard headers, such as `Accept`, `Accept-Language`, `Cookie`, `User-Agent` and `X-Forwarded-For`; on any other, the row shows an error and isn't sent. Appends add up: one from a group lower in the list still adds to a header that a group above it sets.
 
 **Response headers**, below the request headers, go on the responses to the same requests; a group needs a valid header in either list. **Set** replaces any header of that name the server sent, so a `Set-Cookie` row replaces every cookie those responses set; **Append** adds one more instead, and works on any response header. **Remove** strips a header, say an `X-Frame-Options` that keeps a page out of frames. They change headers only: a response's status code and body stay as the server sent them.
 
-The **Tabs** picker shows a small search field when more than 10 tabs are available. Search by title or URL; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
+### Tabs, filters and blocking
 
-A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
+To target tabs instead of URLs, switch the group from **URL patterns** to **Tabs** and tick the tabs: every request they make is changed, whatever its URL. In the side panel, the tab you're on is ticked for you. Tab picks last until Chrome restarts (or ReqTune updates), because Chrome gives tabs new ids then. The picker shows a small search field when more than 10 tabs are available; **Select all** / **Unselect all** below the list applies to all available tabs, including those hidden by the search.
+
+To limit a group to some kinds of requests, open **Filters** below its headers and pick resource types (**Page loads**, **Fetch/XHR**, **Scripts** and more; **Other** covers the rest, such as beacons and CSP reports), methods (**GET**, **POST**…) or both. A request must match a picked type and a picked method; a list with nothing picked matches everything, so a new group starts on **All requests**. Chrome only matches methods on HTTP requests, so picking one also leaves out WebSockets: a group with **WebSocket** as its only type then shows **Inactive**.
+
+To see how a page copes without a script, an API call or analytics, switch the group from **Set headers** to **Block**: Chrome cancels the requests it matches before they're sent. A block beats every group's headers, wherever it sits in the list, and the header rows stay for when you switch back. Careful with **Tabs**: a group that blocks a tab blocks its page loads too, unless its Filters leave them out, so a reload leaves the tab blank but for Chrome's blocked-page error. That's why a blocking group doesn't tick the tab you're on for you.
+
+### Pausing and testing
+
+To stop every group at once, click the pause button in the header or press **Alt+Shift+P** (**Option+Shift+P** on a Mac). Until you resume, the same way or with **Resume** in the panel, no headers are changed and the toolbar icon shows **OFF**. Each group keeps its own switch, and you can keep editing. Change the shortcut at `chrome://extensions/shortcuts`.
 
 To check what a request would get, click **Test a URL** (the globe icon at the top) and type or paste a full URL; in the side panel it starts with the page you're on. It lists every enabled group whose patterns match, the pattern that matched and what it would do: the request and response headers it changes, or that it blocks the request. Where groups change the same header it marks which change wins, as Chrome decides: below a group that sets or appends to a header, the others can only append to it, and below one that removes it, nothing applies. Only the URL is known, so a group with Filters shows them, and a change that wins for some kinds of request but not others reads **overridden for some requests**. A group whose Filters can't take this URL's requests isn't listed: a `ws://` or `wss://` URL is always a WebSocket request, which a method filter never takes. Groups that target tabs are listed apart, since they apply in their picked tabs whatever the URL. In those tabs, list order still counts: when one sets a header that a matching group lower in the list sets too, its value wins there, and the other shows **overridden in picked tabs**.
+
+### Backup and sharing
 
 To back up or share groups, pick **Export all groups** from the ⋮ menu at the top, or **Export** from a group's ⋯ menu, and Chrome downloads `reqtune-groups.json` (or `reqtune-<group-name>.json`). If any request or response header looks like a credential (those whose values show as dots, such as `Cookie` or `Set-Cookie`), ReqTune first asks whether to include their values; left out, they're saved empty, and groups that send them are saved switched off, so an import never replaces someone's real cookie or token with a blank one. **Import groups…** in the same ⋮ menu adds the groups from such a file after yours, so yours keep priority. Tab picks aren't exported: a group that targets tabs comes in with none picked.
 
