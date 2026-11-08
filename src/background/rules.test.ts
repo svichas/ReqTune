@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { patternToRegex } from '../shared/pattern';
 import type { Group, HeaderEntry } from '../shared/types';
-import { buildRules, withinRegexLimit } from './rules';
+import { buildRules, combinedRegex, supportedRules, withinRegexLimit } from './rules';
 
 const resourceTypes = ['main_frame', 'xmlhttprequest'] as chrome.declarativeNetRequest.ResourceType[];
 const group = (patterns: string[], headers: HeaderEntry[], enabled = true): Group => ({
@@ -233,5 +233,62 @@ describe('buildRules', () => {
       patternToRegex('b.com'),
       'tabs',
     ]);
+  });
+
+  it("gives a group that appends one rule for all its patterns, so Chrome can't append twice", () => {
+    const appends: Group = {
+      ...group(['example.com', 'not valid', '/api/*'], [
+        { name: 'X-Env', value: 'qa' },
+        { name: 'Cookie', value: 'debug=1', operation: 'append' },
+      ]),
+      id: 'appends',
+    };
+    const regex = combinedRegex(appends.patterns);
+    expect(buildRules([appends], {}, resourceTypes).map((r) => r.condition.regexFilter)).toEqual([regex]);
+    const urls = ['https://example.com/', 'https://other.com/api/x', 'https://other.com/', 'https://example.com.evil/'];
+    expect(urls.map((url) => new RegExp(regex!, 'i').test(url))).toEqual([true, true, false, false]);
+    // A group whose combined patterns Chrome refused gets a rule per pattern again.
+    expect(buildRules([appends], {}, resourceTypes, new Set(['appends'])).map((r) => r.condition.regexFilter)).toEqual([
+      patternToRegex('example.com'),
+      patternToRegex('/api/*'),
+    ]);
+  });
+
+  it('counts response appends too, and keeps a rule per pattern for groups without a usable append', () => {
+    const patterns = ['a.com', 'b.com'];
+    const set = { name: 'X-Env', value: 'qa' };
+    const groups: Group[] = [
+      { ...group(patterns, []), responseHeaders: [{ name: 'Vary', value: 'Origin', operation: 'append' }] },
+      group(patterns, [set]),
+      group(patterns, [set, { name: 'Cookie', value: 'a=1', operation: 'append', enabled: false }]),
+      // Chrome won't append to this request header, so the row is never sent.
+      group(patterns, [set, { name: 'X-Custom', value: '1', operation: 'append' }]),
+      { ...group(patterns, [{ name: 'Cookie', value: 'a=1', operation: 'append' }]), action: 'block' },
+    ];
+    expect(groups.map((g) => buildRules([g], {}, resourceTypes).length)).toEqual([1, 2, 2, 2, 2]);
+  });
+
+  it('combines patterns only when there are at least two valid ones', () => {
+    expect(combinedRegex([])).toBeNull();
+    expect(combinedRegex(['example.com', 'not valid', ''])).toBeNull();
+    expect(combinedRegex(['a.com', 'regex:^https://b\\.com/'])).toBe(
+      `(?:${patternToRegex('a.com')})|(?:^https://b\\.com/)`,
+    );
+  });
+
+  it('splits a group whose combined patterns Chrome refuses, and leaves out what it refuses', async () => {
+    const cookie: HeaderEntry = { name: 'Cookie', value: 'a=1', operation: 'append' };
+    const groups: Group[] = [
+      { ...group(['a.com', 'bad.com'], [cookie]), id: 'split' },
+      { ...group(['c.com', 'd.com'], [cookie]), id: 'kept' },
+    ];
+    // This Chrome refuses any regex with "bad" in it, the first group's combined patterns included.
+    const isSupported = async (regex: string) => !regex.includes('bad');
+    const { built, supported } = await supportedRules(groups, {}, resourceTypes, isSupported);
+    expect(supported.map((rule) => rule.condition.regexFilter)).toEqual([
+      patternToRegex('a.com'),
+      combinedRegex(['c.com', 'd.com']),
+    ]);
+    expect(built).toBe(3);
   });
 });

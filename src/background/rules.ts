@@ -22,12 +22,20 @@ export function withinRegexLimit(rules: chrome.declarativeNetRequest.Rule[], max
   return rules.filter((rule) => !rule.condition.regexFilter || ++regexes <= max);
 }
 
+/** One regex matching any of the valid patterns, or null when fewer than two are valid. */
+export function combinedRegex(patterns: string[]): string | null {
+  const regexes = patterns.map(patternToRegex).filter((regex) => regex !== null);
+  return regexes.length > 1 ? regexes.map((regex) => `(?:${regex})`).join('|') : null;
+}
+
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
+// `split` names groups whose patterns Chrome refused as one combinedRegex: they get a rule per pattern again.
 export function buildRules(
   groups: Group[],
   tabSelections: TabSelections,
   resourceTypes: chrome.declarativeNetRequest.ResourceType[],
+  split: ReadonlySet<string> = new Set(),
 ): chrome.declarativeNetRequest.Rule[] {
   const rules: chrome.declarativeNetRequest.Rule[] = [];
   groups.forEach((group, index) => {
@@ -68,10 +76,39 @@ export function buildRules(
       if (tabIds.length) rules.push(rule({ tabIds }));
       return;
     }
-    for (const pattern of group.patterns) {
-      const regexFilter = patternToRegex(pattern);
+    // Chrome lets appends add up, even from one extension, so with a rule per pattern a URL that two patterns match
+    // would get each append twice. A set or a remove applies once whatever, so other groups keep a rule per pattern.
+    const appends = !block && [...requestHeaders, ...responseHeaders].some((h) => h.operation === 'append');
+    const combined = appends && !split.has(group.id) ? combinedRegex(group.patterns) : null;
+    for (const regexFilter of combined ? [combined] : group.patterns.map(patternToRegex)) {
       if (regexFilter) rules.push(rule({ regexFilter }));
     }
   });
   return rules;
+}
+
+/**
+ * buildRules' rules minus those whose regex Chrome refuses, as one would fail the whole update: over its size limit or,
+ * from `regex:`, not RE2. A group whose patterns Chrome refused as one combinedRegex gets a rule per pattern again, so
+ * it only loses the patterns Chrome can't take on their own. `built` counts the rules before any were left out.
+ */
+export async function supportedRules(
+  groups: Group[],
+  tabSelections: TabSelections,
+  resourceTypes: chrome.declarativeNetRequest.ResourceType[],
+  isSupported: (regex: string) => Promise<boolean>,
+) {
+  const refusedIn = async (rules: chrome.declarativeNetRequest.Rule[]) => {
+    const regexes = [...new Set(rules.flatMap((rule) => rule.condition.regexFilter ?? []))];
+    const supported = await Promise.all(regexes.map(isSupported));
+    return new Set(regexes.filter((_, i) => !supported[i]));
+  };
+  let rules = buildRules(groups, tabSelections, resourceTypes);
+  let refused = await refusedIn(rules);
+  const split = new Set(groups.filter((g) => refused.has(combinedRegex(g.patterns) ?? '')).map((g) => g.id));
+  if (split.size) {
+    rules = buildRules(groups, tabSelections, resourceTypes, split);
+    refused = await refusedIn(rules);
+  }
+  return { built: rules.length, supported: rules.filter((rule) => !refused.has(rule.condition.regexFilter ?? '')) };
 }

@@ -1,5 +1,5 @@
 import { getGroups, getPaused, getTabSelections, setPaused, setSyncError, watchKey } from '../shared/storage';
-import { buildRules, withinRegexLimit } from './rules';
+import { supportedRules, withinRegexLimit } from './rules';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
 
@@ -15,16 +15,12 @@ async function applyRules(): Promise<void> {
       chrome.action.setBadgeText({ text: paused ? 'OFF' : '' }),
       chrome.action.setTitle({ title: paused ? 'ReqTune is paused' : defaultTitle }),
     ]);
+    const isSupported = async (regex: string) =>
+      (await dnr.isRegexSupported({ regex, isCaseSensitive: false })).isSupported;
     // Every type must be listed: without resourceTypes Chrome skips main_frame requests.
-    const rules = paused ? [] : buildRules(groups, tabSelections, Object.values(dnr.ResourceType));
-    // One regex Chrome can't compile, over its size limit or (from `regex:`) not RE2, would fail the whole update, so
-    // those rules are left out.
-    const checks = await Promise.all(
-      rules.map(({ condition: { regexFilter } }) =>
-        regexFilter ? dnr.isRegexSupported({ regex: regexFilter, isCaseSensitive: false }) : { isSupported: true },
-      ),
-    );
-    const supported = rules.filter((_, i) => checks[i].isSupported);
+    const { built, supported } = paused
+      ? { built: 0, supported: [] }
+      : await supportedRules(groups, tabSelections, Object.values(dnr.ResourceType), isSupported);
     const addRules = withinRegexLimit(supported, dnr.MAX_NUMBER_OF_REGEX_RULES);
     // Chrome only matches tabIds in session rules, which, like tab ids, don't outlive the browser session.
     await dnr.updateDynamicRules({
@@ -35,7 +31,7 @@ async function applyRules(): Promise<void> {
       removeRuleIds: ids(await dnr.getSessionRules()),
       addRules: addRules.filter((rule) => rule.condition.tabIds),
     });
-    const unusable = rules.length - supported.length;
+    const unusable = built - supported.length;
     const overLimit = supported.length - addRules.length;
     const notes = [
       unusable && `${unusable} pattern(s) Chrome can't use were skipped; see below.`,
