@@ -138,14 +138,28 @@ button.toggle {
 }
 
 /* Headers that are off recede like off groups; the box stays crisp so turning one back on is obvious. */
-.row[data-off] :is(.name, .value) {
+.row[data-off] :is(.operation, .name, .value) {
   opacity: 0.6;
 }
 
-/* Header rows: name | value, split by a hairline; names get slightly more room than values. */
+/* Header rows: switch | operation | name | value, the last two split by a hairline; names get slightly more room than
+   values. */
+.operation {
+  flex: none;
+  align-self: flex-start;
+  /* Centres the 24px button on the 32px input line, its icon in line with "Add header"'s. */
+  margin: 4px 0 0 4px;
+}
+
 .name {
   flex: 6 1 0;
   min-width: 0;
+}
+
+/* The operation button already insets the name, so the name and its error start closer to it. */
+.name input.input,
+.name .error {
+  padding-inline-start: 4px;
 }
 
 .value {

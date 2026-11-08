@@ -109,3 +109,12 @@
 .alertMessage {
   overflow-wrap: anywhere;
 }
+
+/* Overflow stays visible: Mantine hides it, which would clip the button's focus ring. */
+.pausedMessage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  overflow: visible;
+}

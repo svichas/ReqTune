@@ -3,7 +3,7 @@ import { ActionIcon, Collapse, Switch, Text, TextInput, Tooltip } from '@mantine
 import { IconAlertTriangle, IconChevronDown } from '@tabler/icons-react';
 import { patternToRegex } from '../../shared/pattern';
 import type { Group } from '../../shared/types';
-import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
+import { isValidRequestHeader } from '../../shared/validation';
 import type { OpenTab } from '../hooks/useOpenTabs';
 import classes from './GroupCard.module.css';
 import { type GroupActions, GroupMenu } from './GroupMenu';
@@ -47,9 +47,7 @@ export function GroupCard({ group, tabs, tabIds, autoFocus, onChange, onTabIdsCh
   const targets = byTabs
     ? tabs.filter((tab) => tabIds.includes(tab.id)).length
     : group.patterns.filter((p) => patternToRegex(p) !== null).length;
-  const headers = group.headers.filter(
-    (h) => h.enabled !== false && isValidHeaderName(h.name.trim()) && isValidHeaderValue(h.value),
-  ).length;
+  const headers = group.headers.filter((h) => h.enabled !== false && isValidRequestHeader(h)).length;
   const inactive = group.enabled && (targets === 0 || headers === 0);
 
   // Bare header space toggles; controls keep their clicks, and menu items (portaled) bubble here through React.
