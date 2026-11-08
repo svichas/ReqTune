@@ -36,6 +36,7 @@
 - **Screen-share safe** — values of `Authorization`, `Cookie` and other token-like headers show as dots until you reveal them.
 - **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
 - **User-Agent presets** — a `User-Agent` row's value field suggests common Chrome, Safari, Firefox, Googlebot, Bingbot and curl strings, or type your own. Only the header changes: `navigator.userAgent` and client hints (`Sec-CH-UA-*`) still report your real browser.
+- **Export and import** — save groups to a JSON file to back them up or hand them to a teammate, and import them on any machine. Secret values stay out of the file unless you choose to include them.
 - **Side panel or full page** — the panel stays open while you browse; open it as a full page when long tokens need more room, and edits stay in sync between the two. Light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
@@ -81,6 +82,8 @@ The **Tabs** picker shows a small search field when more than 10 tabs are availa
 A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open.
 
 To check what a request would get, click **Test a URL** (the globe icon at the top) and type or paste a full URL; in the side panel it starts with the page you're on. It lists every enabled group whose patterns match, the pattern that matched and what it would do: the request and response headers it changes, or that it blocks the request. Where groups change the same header it marks which change wins, as Chrome decides: below a group that sets or appends to a header, the others can only append to it, and below one that removes it, nothing applies. Only the URL is known, so a group with Filters shows them, and a change that wins for some kinds of request but not others reads **overridden for some requests**. A group whose Filters can't take this URL's requests isn't listed: a `ws://` or `wss://` URL is always a WebSocket request, which a method filter never takes. Groups that target tabs are listed apart, since they apply in their picked tabs whatever the URL. In those tabs, list order still counts: when one sets a header that a matching group lower in the list sets too, its value wins there, and the other shows **overridden in picked tabs**.
+
+To back up or share groups, pick **Export all groups** from the ⋮ menu at the top, or **Export** from a group's ⋯ menu, and Chrome downloads `reqtune-groups.json` (or `reqtune-<group-name>.json`). If any request or response header looks like a credential (those whose values show as dots, such as `Cookie` or `Set-Cookie`), ReqTune first asks whether to include their values; left out, they're saved empty, and groups that send them are saved switched off, so an import never replaces someone's real cookie or token with a blank one. **Import groups…** in the same ⋮ menu adds the groups from such a file after yours, so yours keep priority. Tab picks aren't exported: a group that targets tabs comes in with none picked.
 
 ## Pattern syntax
 

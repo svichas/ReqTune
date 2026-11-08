@@ -1,17 +1,26 @@
-import { type Ref, useState } from 'react';
+import { type RefObject, useState } from 'react';
 import { ActionIcon, Menu, Tooltip } from '@mantine/core';
-import { IconArrowDown, IconArrowUp, IconCopy, IconDots, IconTrash } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconCopy, IconDots, IconFileExport, IconTrash } from '@tabler/icons-react';
 
 export interface GroupActions {
   isFirst: boolean;
   isLast: boolean;
   onDuplicate: () => void;
+  onExport: () => void;
   onMove: (delta: -1 | 1) => void;
   /** `viaKeyboard`: focus should follow to the undo bar, since the menu item it was on is gone. */
   onDelete: (viaKeyboard: boolean) => void;
 }
 
-export function GroupMenu({ ref, isFirst, isLast, onDuplicate, onMove, onDelete }: GroupActions & { ref: Ref<HTMLButtonElement> }) {
+export function GroupMenu({
+  ref,
+  isFirst,
+  isLast,
+  onDuplicate,
+  onExport,
+  onMove,
+  onDelete,
+}: GroupActions & { ref: RefObject<HTMLButtonElement | null> }) {
   const [opened, setOpened] = useState(false);
   return (
     <Menu opened={opened} onChange={setOpened} position="bottom-end" width={160}>
@@ -27,6 +36,17 @@ export function GroupMenu({ ref, isFirst, isLast, onDuplicate, onMove, onDelete 
       <Menu.Dropdown>
         <Menu.Item leftSection={<IconCopy size={16} />} onClick={onDuplicate}>
           Duplicate
+        </Menu.Item>
+        {/* Focus moves to the trigger first: a dialog this opens hands focus back to whatever had it, and this item
+            unmounts with the menu. */}
+        <Menu.Item
+          leftSection={<IconFileExport size={16} />}
+          onClick={() => {
+            ref.current?.focus();
+            onExport();
+          }}
+        >
+          Export
         </Menu.Item>
         <Menu.Item leftSection={<IconArrowUp size={16} />} disabled={isFirst} onClick={() => onMove(-1)}>
           Move up

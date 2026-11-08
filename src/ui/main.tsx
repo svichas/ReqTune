@@ -1,6 +1,6 @@
 import '@mantine/core/styles.css';
 import './global.css';
-import { ActionIcon, MantineProvider, Menu, Switch, Tooltip, createTheme, mergeThemeOverrides } from '@mantine/core';
+import { ActionIcon, MantineProvider, Menu, Modal, Switch, Tooltip, createTheme, mergeThemeOverrides } from '@mantine/core';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { brandCssVariables, brandTheme } from './brand';
@@ -15,6 +15,11 @@ const uiTheme = createTheme({
     Switch: Switch.extend({ defaultProps: { withThumbIndicator: false } }),
     // Mantine pads menu items with spacing tokens, which the brand's 4px grid makes too tight for a pointer target.
     Menu: Menu.extend({ styles: { item: { padding: '6px 10px' }, itemSection: { marginInlineEnd: 8 } } }),
+    // A dialog's title is its heading, but Mantine sets it in the body weight, and leaves the close button unnamed.
+    Modal: Modal.extend({
+      defaultProps: { closeButtonProps: { 'aria-label': 'Close' } },
+      styles: { title: { fontWeight: 'var(--mantine-heading-font-weight)' } },
+    }),
   },
 });
 

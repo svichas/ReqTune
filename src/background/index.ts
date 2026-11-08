@@ -1,5 +1,5 @@
 import { getGroups, getPaused, getTabSelections, setPaused, setSyncError, watchKey } from '../shared/storage';
-import { buildRules } from './rules';
+import { buildRules, withinRegexLimit } from './rules';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
 
@@ -24,7 +24,8 @@ async function applyRules(): Promise<void> {
         regexFilter ? dnr.isRegexSupported({ regex: regexFilter, isCaseSensitive: false }) : { isSupported: true },
       ),
     );
-    const addRules = rules.filter((_, i) => checks[i].isSupported);
+    const supported = rules.filter((_, i) => checks[i].isSupported);
+    const addRules = withinRegexLimit(supported, dnr.MAX_NUMBER_OF_REGEX_RULES);
     // Chrome only matches tabIds in session rules, which, like tab ids, don't outlive the browser session.
     await dnr.updateDynamicRules({
       removeRuleIds: ids(await dnr.getDynamicRules()),
@@ -34,8 +35,14 @@ async function applyRules(): Promise<void> {
       removeRuleIds: ids(await dnr.getSessionRules()),
       addRules: addRules.filter((rule) => rule.condition.tabIds),
     });
-    const skipped = rules.length - addRules.length;
-    await setSyncError(skipped ? `${skipped} pattern(s) Chrome can't use were skipped; see below.` : undefined);
+    const unusable = rules.length - supported.length;
+    const overLimit = supported.length - addRules.length;
+    const notes = [
+      unusable && `${unusable} pattern(s) Chrome can't use were skipped; see below.`,
+      overLimit &&
+        `Chrome takes ${dnr.MAX_NUMBER_OF_REGEX_RULES} patterns at most, so the last ${overLimit} were left out.`,
+    ];
+    await setSyncError(notes.filter(Boolean).join(' ') || undefined);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await setSyncError(`Chrome rejected the update, so your latest changes aren't applied: ${message}`);

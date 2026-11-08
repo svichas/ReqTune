@@ -13,6 +13,15 @@ const headerInfos = (headers: HeaderEntry[], isValid: (header: HeaderEntry) => b
       return { header: operation === 'append' ? header.toLowerCase() : header, operation, value };
     });
 
+/**
+ * The rules within Chrome's cap on regex rules, past which it refuses the whole update. They come in priority order, so
+ * the lowest-priority patterns are the ones left out.
+ */
+export function withinRegexLimit(rules: chrome.declarativeNetRequest.Rule[], max: number) {
+  let regexes = 0;
+  return rules.filter((rule) => !rule.condition.regexFilter || ++regexes <= max);
+}
+
 // Runs under Vitest without a `chrome` global, so enum values are written as string literals.
 // Ids are unique across all returned rules, so callers may split them between Chrome's rule sets.
 export function buildRules(
