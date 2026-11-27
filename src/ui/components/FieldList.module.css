@@ -71,8 +71,8 @@ input.input[data-masked] {
   font-size: var(--mantine-font-size-xs);
 }
 
-/* Value preset labels stay on one line, so their list may be wider than a narrow value cell. */
-.presets {
+/* Name suggestions and value presets stay on one line, so their list may be wider than a narrow cell. */
+.dropdown {
   min-width: max-content;
 }
 
@@ -148,7 +148,11 @@ button.toggle {
 }
 
 /* Header rows: switch | operation | name | value, the last two split by a hairline; names get slightly more room than
-   values. */
+   values. Dragging the hairline puts the name's share of the two on the page root, in percent. */
+.row {
+  --name-share: var(--rt-name-share, 54.5);
+}
+
 .operation {
   flex: none;
   align-self: flex-start;
@@ -156,9 +160,11 @@ button.toggle {
   margin: 4px 0 0 4px;
 }
 
+/* Both cells keep 3rem however far the hairline is dragged: room to grab it again, and for a secret value's show
+   button. */
 .name {
-  flex: 6 1 0;
-  min-width: 0;
+  flex: var(--name-share) 1 0;
+  min-width: 3rem;
 }
 
 /* The operation button already insets the name, so the name and its error start closer to it. */
@@ -168,19 +174,39 @@ button.toggle {
 }
 
 .value {
-  flex: 5 1 0;
-  min-width: 0;
-  border-left: 1px solid var(--rt-line);
+  flex: calc(100 - var(--name-share)) 1 0;
+  min-width: 3rem;
+}
+
+/* The hairline, drawn as its own element so it can be dragged. Its grab area reaches 4px into the cells on both sides,
+   over the inputs' padding. */
+.divider {
+  flex: none;
+  position: relative;
+  /* Above the inputs it overlaps, which Mantine positions too. */
+  z-index: 1;
+  width: 1px;
+  background: var(--rt-line);
+  cursor: col-resize;
+  /* A touch drag would otherwise scroll the list. */
+  touch-action: none;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.divider:hover,
+.divider:active {
+  background: var(--mantine-primary-color-filled);
 }
 
 /* With room to spare, as in the full page, values (often long tokens) get the larger share. */
 @media (min-width: 40rem) {
-  .name {
-    flex-grow: 2;
-  }
-
-  .value {
-    flex-grow: 3;
+  .row {
+    --name-share: var(--rt-name-share, 40);
   }
 }
 
