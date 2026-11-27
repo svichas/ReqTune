@@ -47,7 +47,7 @@
 **Everyday**
 
 - **Export and import** — save groups to a JSON file to back them up or hand them to a teammate, and import them on any machine. Secret values stay out of the file unless you choose to include them.
-- **Comfortable editing** — header name suggestions, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
+- **Comfortable editing** — header name suggestions, name and value columns you can resize, duplicate groups, undo deletes, Enter to add a row, Backspace to drop an empty one.
 - **Side panel or full page** — the panel stays open while you browse; open it as a full page when long tokens need more room, and edits stay in sync between the two. Light and dark themes follow your system.
 - **Private** — everything stays in local extension storage; ReqTune makes no network requests and collects nothing.
 
@@ -76,7 +76,7 @@ Then load the `dist/` folder the same way. After pulling changes, rebuild and cl
 2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move, export or delete it.
 
-A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open. Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
+A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open. Need more room? Drag the line between a header's name and its value to resize the two: every header row follows, and ReqTune remembers the split. Or **Open in full page** at the bottom of the panel, which shows the same groups in a tab of their own, with wider fields for long values.
 
 ### Headers
 

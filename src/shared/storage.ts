@@ -9,6 +9,8 @@ export interface StoredState {
   syncError?: string;
   /** Every group off at once, each keeping its own switch for when ReqTune resumes; absent means running. */
   paused?: boolean;
+  /** The name's share of a header row's name and value, in percent; absent until the line between them is dragged. */
+  nameShare?: number;
 }
 
 /**
@@ -88,6 +90,13 @@ export async function getPaused(): Promise<boolean> {
 }
 
 export const setPaused = (paused: boolean) => chrome.storage.local.set({ paused });
+
+export async function getNameShare(): Promise<number | undefined> {
+  const { nameShare } = await chrome.storage.local.get('nameShare');
+  return nameShare as number | undefined;
+}
+
+export const setNameShare = (nameShare: number) => chrome.storage.local.set({ nameShare });
 
 /** Calls `onChange` whenever `key` changes in the `area` storage area; returns the unsubscribe function. */
 export function watchKey<A extends keyof StorageAreas, K extends keyof StorageAreas[A] & string>(
