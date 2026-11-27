@@ -9,6 +9,8 @@ export interface StoredState {
   syncError?: string;
   /** Every group off at once, each keeping its own switch for when ReqTune resumes; absent means running. */
   paused?: boolean;
+  /** The name's share of a header row's name and value, in percent; absent until the line between them is dragged. */
+  nameShare?: number;
   /** Set once the worker has switched off the groups 0.2.0 left without a pattern, which only now take requests. */
   patternsOptional?: boolean;
 }
@@ -90,6 +92,13 @@ export async function getPaused(): Promise<boolean> {
 }
 
 export const setPaused = (paused: boolean) => chrome.storage.local.set({ paused });
+
+export async function getNameShare(): Promise<number | undefined> {
+  const { nameShare } = await chrome.storage.local.get('nameShare');
+  return nameShare as number | undefined;
+}
+
+export const setNameShare = (nameShare: number) => chrome.storage.local.set({ nameShare });
 
 export async function getPatternsOptional(): Promise<boolean> {
   const { patternsOptional } = await chrome.storage.local.get('patternsOptional');

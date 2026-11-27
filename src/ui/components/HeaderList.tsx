@@ -4,6 +4,7 @@ import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { HeaderEntry } from '../../shared/types';
 import { isValidHeaderName, isValidHeaderValue } from '../../shared/validation';
 import { isSecretHeader, valuePresets } from '../headers';
+import { ColumnDivider } from './ColumnDivider';
 import { FieldList, RemoveButton, useFocusAfterRender } from './FieldList';
 import classes from './FieldList.module.css';
 import { OperationMenu } from './OperationMenu';
@@ -19,8 +20,11 @@ interface Props {
 }
 
 const inputClassNames = { input: classes.input, error: classes.error };
-const nameClassNames = { ...inputClassNames, option: classes.option };
-const presetClassNames = { ...inputClassNames, dropdown: classes.presets };
+const nameClassNames = { ...inputClassNames, option: classes.option, dropdown: classes.dropdown };
+const presetClassNames = { ...inputClassNames, dropdown: classes.dropdown };
+// A list wider than its cell would run off the panel's edge beside a narrow name or value. Mantine only moves a list
+// sideways to keep it in view when told to, since one sized to its field never needs it.
+const comboboxProps = { middlewares: { shift: { mainAxis: true } } };
 
 // Remove sends no value, so its row hides the value field (keeping what was typed, for switching back).
 const hasValue = (header: HeaderEntry) => header.operation !== 'remove';
@@ -121,6 +125,7 @@ export function HeaderList({ label, headers, suggestions, canAppend, required, o
               variant="unstyled"
               className={classes.name}
               classNames={nameClassNames}
+              comboboxProps={comboboxProps}
               aria-label={`Header ${i + 1} name`}
               placeholder="Header-Name"
               autoComplete="off"
@@ -135,10 +140,12 @@ export function HeaderList({ label, headers, suggestions, canAppend, required, o
               onOptionSubmit={() => focusAfterRender(`value${i}`)}
               onKeyDown={onKeyDown(i, 'name')}
             />
+            {hasValue(header) && <ColumnDivider />}
             {presets.length ? (
               <Autocomplete
                 {...valueProps}
                 classNames={presetClassNames}
+                comboboxProps={comboboxProps}
                 // The options are the values, so picking one fills it in; the list shows and matches their labels.
                 data={presets.map((preset) => preset.value)}
                 renderOption={({ option }) => presetLabel(option.value)}
