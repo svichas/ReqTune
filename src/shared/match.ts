@@ -1,4 +1,4 @@
-import { patternToRegex } from './pattern';
+import { patternToRegex, takesEveryUrl } from './pattern';
 import type { Group, HeaderEntry } from './types';
 import { isValidRequestHeader, isValidResponseHeader } from './validation';
 
@@ -25,7 +25,10 @@ export interface GroupMatch {
 }
 
 export interface UrlMatches {
-  /** Groups whose URL patterns match, in list order (their priority), each with the first pattern that matches. */
+  /**
+   * Groups whose URL patterns match, in list order (their priority), each with the first pattern that matches: '' for
+   * a group with no pattern, which takes every URL.
+   */
   byPattern: (GroupMatch & { pattern: string })[];
   /** Groups that target tabs: they change every request from their picked tabs, whatever the URL. */
   byTabs: GroupMatch[];
@@ -152,10 +155,12 @@ export function matchGroups(groups: Group[], url: string): UrlMatches | null {
       tabsMatches.add(match);
     } else {
       // href is the canonical form Chrome matches: lowercase punycode host, no default port.
-      const pattern = group.patterns.find((p) => {
-        const regex = patternToRegex(p);
-        return regex !== null && new RegExp(regex, 'i').test(parsed.href);
-      });
+      const pattern = takesEveryUrl(group)
+        ? ''
+        : group.patterns.find((p) => {
+            const regex = patternToRegex(p);
+            return regex !== null && new RegExp(regex, 'i').test(parsed.href);
+          });
       if (pattern === undefined) continue;
       result.byPattern.push({ ...match, pattern });
       if (blocks && !result.blockedBy && kinds.every((kind) => takes(group, kind))) result.blockedBy = group;

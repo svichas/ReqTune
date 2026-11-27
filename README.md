@@ -32,7 +32,7 @@
 **Which requests**
 
 - **Wildcard or regex patterns** — `*.example.com/api/*`, `localhost:3000`, `/graphql` and more, or a regular expression after `regex:` when wildcards aren't enough ([syntax](#pattern-syntax)).
-- **URL patterns or tabs** — a group targets URL patterns, or switch it to **Tabs** to change every request from the tabs you pick, say the one you're testing in.
+- **URL patterns or tabs** — a group targets URL patterns, or every request when it has none. Switch it to **Tabs** to change every request from the tabs you pick, say the one you're testing in.
 - **Request filters** — limit a group to some kinds of requests, say Fetch/XHR or POST only, and leave page loads, images and the rest alone.
 - **Block requests** — switch a group to **Block** to cancel the requests it matches instead, and see how a page copes without a script, an API call or analytics.
 
@@ -73,10 +73,10 @@ Then load the `dist/` folder the same way. After pulling changes, rebuild and cl
 ## Usage
 
 1. Click the ReqTune icon in the toolbar to open the side panel (pin it from the puzzle-piece menu for one-click access).
-2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header.
+2. Click **New group**, type a URL pattern, then a header name and value. That's it — matching requests now carry the header. Leave the pattern empty and every request does.
 3. Use the switch to pause a group, and the ⋯ menu to duplicate, move, export or delete it.
 
-A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and something to target: a valid pattern or, when it targets tabs, a picked tab that's still open. Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
+A group shows **Inactive** until it has a valid, ticked header (a blocking group needs none) and, when it targets tabs, a picked tab that's still open. Patterns are optional: with none, a group changes every request and shows **All URLs**. Two things still need a valid pattern: a blocking group, since one click on **Block** would otherwise cut off every site, and a group whose only patterns are mistyped, so a typo never sends its headers everywhere. Need more room? **Open in full page** at the bottom of the panel shows the same groups in a tab of their own, with wider fields for long values.
 
 ### Headers
 
@@ -108,15 +108,17 @@ To back up or share groups, pick **Export all groups** from the ⋮ menu at the 
 
 | Pattern | Matches |
 | --- | --- |
-| `example.com` | Every URL on example.com — any scheme (http, https, ws, wss), port and path |
-| `*.example.com` | example.com **and** all of its subdomains |
-| `api.example.com/v1/*` | Everything under `/v1/` on that host |
+| `example.com` | Every URL on example.com **and** its subdomains — any scheme (http, https, ws, wss), port and path |
+| `*.example.com` | The same: a host always covers its subdomains |
+| `api.example.com/v1/*` | Everything under `/v1/` on that host and its subdomains |
 | `localhost:3000` | Only port 3000 |
 | `https://example.com/*` | HTTPS requests only |
 | `/graphql` | That path on any host |
 | `example.com/search?q=*` | Paths whose query string matches too |
 | `regex:^https://(api\|admin)\.example\.com/v[0-9]+/` | URLs the regular expression after `regex:` matches, here any API version on two hosts |
 
+- No pattern at all means every request, for a group that changes headers. A blocking group needs one; `*` blocks every URL.
+- A host covers its subdomains: `example.com` also matches `app.example.com`, and `api.example.com` matches `eu.api.example.com` but not `example.com`. For one host alone, use a regex: `regex:^https://example\.com/`.
 - In the host, `*` never crosses a `/`, so `example.com` can't match `example.com.evil.com`.
 - No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains `?`.
 - Leave out default ports (`:80`, `:443`): Chrome removes them from URLs, so they never match.
@@ -134,7 +136,7 @@ flowchart LR
   DNR -- sets headers on, or blocks --> R(("Matching requests"))
 ```
 
-The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. In a group that appends to a header, patterns that can match the same URL share one rule instead: Chrome lets appends add up, so a URL that two rules match would get each append twice. Chrome caps how big each regex can be, so if it can't take those patterns as one, they keep a rule each, and the panel says the group's appends may repeat. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations) and method unless the group's Filters narrow them, and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority.
+The background service worker turns every enabled group into one [`declarativeNetRequest`](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest) rule per URL pattern. In a group that appends to a header, patterns that can match the same URL share one rule instead: Chrome lets appends add up, so a URL that two rules match would get each append twice. Chrome caps how big each regex can be, so if it can't take those patterns as one, they keep a rule each, and the panel says the group's appends may repeat. Each wildcard pattern compiles to an anchored regex (a `regex:` pattern is used as written), rules cover every resource type (including page navigations) and method unless the group's Filters narrow them, and each rule set is swapped atomically so edits never leave it half-applied. Group order becomes rule priority. A group with no pattern gets a single rule with no URL filter instead, which matches every request.
 
 A group that targets tabs becomes a single session rule with a `tabIds` condition and no URL filter, so it matches every request from those tabs; session rules are the only kind Chrome lets match by tab. Tab ids are only valid until Chrome restarts, so the picks live in `chrome.storage.session`, which Chrome clears at the same time, and a stale id can never match a new tab.
 
@@ -146,7 +148,7 @@ A group that targets tabs becomes a single session rule with a `tabIds` conditio
 | `storage` | Save your groups |
 | `sidePanel` | Show the UI in Chrome's side panel |
 | `favicon` | Show site icons in the tab picker, from Chrome's icon cache. Adds no install warning, since ReqTune already has site access. |
-| Access to all sites | Set headers on, or block requests to, whichever sites your patterns name. You can narrow this in the extension's Chrome settings. |
+| Access to all sites | Set headers on, or block requests to, whichever sites your patterns name; a group with no pattern sets its headers on every site. You can narrow this in the extension's Chrome settings. |
 
 Header values (tokens included) are stored unencrypted in the extension's local storage.
 

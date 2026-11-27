@@ -17,7 +17,10 @@ export interface Group {
   id: string;
   name: string;
   enabled: boolean;
-  /** Wildcard URL patterns, e.g. `*.example.com/api/*`; syntax in pattern.ts. */
+  /**
+   * Wildcard URL patterns, e.g. `example.com/api/*`; syntax in pattern.ts. With none, a group that changes headers
+   * takes every request; see takesEveryUrl.
+   */
   patterns: string[];
   headers: HeaderEntry[];
   /** Set on the responses to those requests; absent means none. */

@@ -186,6 +186,25 @@ describe('buildRules', () => {
     for (const { condition } of rules) expect(condition).not.toHaveProperty('requestMethods');
   });
 
+  it('gives a header group with no pattern one rule with no URL filter, for every request', () => {
+    const header = { name: 'X-Token', value: 't' };
+    const groups: Group[] = [
+      group([], [header]),
+      { ...group(['', ' \t'], [header]), requestMethods: ['post'] },
+      // None of these widens to every request: a typo, a block (one click would cut off every site), no header.
+      group(['', 'not valid'], [header]),
+      { ...group([], [header]), action: 'block' },
+      group([], [{ name: '', value: '' }]),
+    ];
+    const rules = buildRules(groups, {}, resourceTypes);
+    expect(rules.map(({ priority, condition }) => ({ priority, condition }))).toStrictEqual([
+      { priority: 5, condition: { resourceTypes } },
+      { priority: 4, condition: { resourceTypes, requestMethods: ['post'] } },
+    ]);
+    // Not regex rules, so they never count towards Chrome's cap on those.
+    expect(withinRegexLimit(rules, 0)).toEqual(rules);
+  });
+
   it("keeps groups saved by 0.1.3's \"Selected tabs\" on their URL patterns", () => {
     // 0.1.3 limited a group to patterns *and* tabs with `limitToTabs`. Read as targeting tabs, its headers (often a
     // token) would start going to every site those tabs talk to; on patterns they stay with the sites named.
@@ -243,11 +262,12 @@ describe('buildRules', () => {
 
   it("gives an appending group's patterns that can match one URL a single rule, so Chrome can't append twice", () => {
     const headers = [{ name: 'X-Env', value: 'qa' }, cookie];
-    const appends = group(['example.com', 'not valid', '*.example.com', 'other.org'], headers);
+    // A host covers its subdomains, so the first and third can both match https://api.example.com/.
+    const appends = group(['example.com', 'not valid', 'api.example.com', 'other.org'], headers);
     // Unchecked, every pattern gets its own rule, so Chrome can be asked about each.
     expect(buildRules([appends], {}, resourceTypes)).toHaveLength(3);
     const regexes = buildRules([appends], {}, resourceTypes, new Set()).map((rule) => rule.condition.regexFilter);
-    expect(regexes).toEqual([combined('example.com', '*.example.com'), patternToRegex('other.org')]);
+    expect(regexes).toEqual([combined('example.com', 'api.example.com'), patternToRegex('other.org')]);
     const urls = ['https://example.com/', 'https://a.example.com/x', 'https://other.org/', 'https://example.com.evil/'];
     expect(urls.map((url) => new RegExp(regexes[0]!, 'i').test(url))).toEqual([true, true, false, false]);
   });
@@ -280,20 +300,20 @@ describe('buildRules', () => {
   it('asks Chrome about each pattern, then their combinations, and reports what it refused', async () => {
     const groups: Group[] = [
       { ...group(['a.com', '/api/*', 'bad.com'], [cookie]), id: 'combined' },
-      { ...group(['c.com', '*.c.com', 'd.com'], [cookie]), id: 'repeats' },
+      { ...group(['c.com', 'api.c.com', 'd.com'], [cookie]), id: 'repeats' },
       { ...group(['e.com', 'bad.org'], [{ name: 'X-Env', value: 'qa' }]), id: 'plain' },
     ];
     const asked: string[] = [];
     // This Chrome refuses anything with "bad" in it, and the c.com patterns as one regex.
     const isSupported = async (regex: string) => {
       asked.push(regex);
-      return !regex.includes('bad') && regex !== combined('c.com', '*.c.com');
+      return !regex.includes('bad') && regex !== combined('c.com', 'api.c.com');
     };
     const { rules, skipped, repeats } = await supportedRules(groups, {}, resourceTypes, isSupported);
     expect(rules.map((rule) => rule.condition.regexFilter)).toEqual([
       combined('a.com', '/api/*'),
       patternToRegex('c.com'),
-      patternToRegex('*.c.com'),
+      patternToRegex('api.c.com'),
       patternToRegex('d.com'),
       patternToRegex('e.com'),
     ]);

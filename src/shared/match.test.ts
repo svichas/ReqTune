@@ -39,6 +39,23 @@ describe('matchGroups', () => {
     });
   });
 
+  it('lists a header group with no pattern for every URL, weighed like any other URL group', () => {
+    const groups = [
+      group('all', ['', ' '], [['X-Env', 'all']]),
+      // Neither takes every URL: a typo never widens a group, and a block needs a pattern.
+      group('typo', ['not valid'], [['X-Env', 'typo']]),
+      group('block', [], [], { action: 'block' }),
+      group('a', ['example.com'], [['x-env', 'a']]),
+    ];
+    expect(matchGroups(groups, 'https://app.example.com/x')).toEqual({
+      byPattern: [
+        { group: groups[0], pattern: '', headers: [{ name: 'X-Env', value: 'all', wins: true }], responseHeaders: [] },
+        { group: groups[3], pattern: 'example.com', headers: [{ name: 'x-env', value: 'a', wins: false }], responseHeaders: [] },
+      ],
+      byTabs: [],
+    });
+  });
+
   it('marks the header that wins when several set it: the first in list order, names compared case-insensitively', () => {
     const groups = [
       group('a', ['example.com'], [['X-Token', 'a'], ['X-A', '1']]),

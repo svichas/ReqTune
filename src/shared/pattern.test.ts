@@ -1,19 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { canOverlap, patternToRegex } from './pattern';
+import { canOverlap, patternToRegex, takesEveryUrl } from './pattern';
+import type { Group } from './types';
 
 const cases: [pattern: string, matches: string[], misses: string[]][] = [
   // Examples from the doc comment
   [
     'example.com',
-    ['https://example.com/', 'http://example.com/a?b=c', 'https://EXAMPLE.com', 'wss://example.com:8443/'],
+    [
+      'https://example.com/',
+      'http://example.com/a?b=c',
+      'https://EXAMPLE.com',
+      'wss://example.com:8443/',
+      // A host covers its subdomains, on every path too.
+      'https://www.example.com/',
+      'https://a.b.example.com:8080/x/y?z=1',
+    ],
     [
       'https://example.com.evil.com/',
       'https://evil.com/?u=example.com',
       'https://example.com@evil.com/',
       'https://example.com:8080@evil.com/',
       'https://example.com:pw@evil.com/',
+      'https://www.example.com@evil.com/',
+      'https://evil.com/www.example.com',
       'https://notexample.com/',
-      'https://www.example.com/',
       'ftp://example.com/',
     ],
   ],
@@ -33,13 +43,20 @@ const cases: [pattern: string, matches: string[], misses: string[]][] = [
   ],
   [
     'localhost:3000',
-    ['http://localhost:3000/', 'ws://localhost:3000/socket', 'http://localhost:3000'],
+    ['http://localhost:3000/', 'ws://localhost:3000/socket', 'http://localhost:3000', 'http://app.localhost:3000/'],
     ['http://localhost/', 'http://localhost:3001/', 'http://localhost:30001/', 'http://localhost:3000@evil.com/'],
   ],
   [
     'https://api.example.com/v1/*',
-    ['https://api.example.com/v1/users'],
-    ['http://api.example.com/v1/users', 'wss://api.example.com/v1/x', 'https://api.example.com/v2/users'],
+    ['https://api.example.com/v1/users', 'https://eu.api.example.com/v1/users'],
+    [
+      'http://api.example.com/v1/users',
+      'wss://api.example.com/v1/x',
+      'https://api.example.com/v2/users',
+      // Subdomains only: neither the domain above nor a sibling.
+      'https://example.com/v1/users',
+      'https://www.example.com/v1/users',
+    ],
   ],
   [
     '/graphql',
@@ -54,9 +71,11 @@ const cases: [pattern: string, matches: string[], misses: string[]][] = [
   ],
   [
     'api.*.example.com',
-    ['https://api.eu.example.com/'],
+    ['https://api.eu.example.com/', 'https://v2.api.eu.example.com/'],
     ['https://api.example.com/', 'https://api.x/.example.com/', 'https://api.x@a.example.com/'],
   ],
+  // Left half-typed, `*.` isn't every host: only one that ends in a dot.
+  ['*.', ['https://example.com./'], ['https://example.com/', 'https://a.example.com/']],
   // Ports
   ['example.com:*', ['https://example.com/', 'https://example.com:8443/'], ['https://example.com.evil.com:8443/']],
   ['*:8080', ['http://anything.test:8080/'], ['http://anything.test/', 'http://anything.test:18080/']],
@@ -135,6 +154,10 @@ describe('patternToRegex', () => {
     expect(patternToRegex(pattern)).toBeNull();
   });
 
+  it('reads a leading *. as the host alone, which covers its subdomains anyway', () => {
+    expect(patternToRegex('*.example.com/api/*')).toBe(patternToRegex('example.com/api/*'));
+  });
+
   it('passes a regex: pattern on as written, trimmed', () => {
     const source = '^https://(api|admin)\\.example\\.com/v[0-9]+/';
     expect(patternToRegex(` regex: ${source}\t`)).toBe(source);
@@ -151,6 +174,8 @@ describe('canOverlap', () => {
     ['example.com', 'EXAMPLE.com/search'],
     ['*.example.com', 'example.com'],
     ['*.example.com', 'api.example.com'],
+    // A host covers its subdomains: both match https://api.example.com/v1/x.
+    ['example.com/v1/*', 'api.example.com'],
     ['api.*.example.com', '*.eu.example.com'],
     ['localhost:3000', '*:3000'],
     ['https://example.com', 'example.com:*'],
@@ -169,6 +194,7 @@ describe('canOverlap', () => {
 
   it.each([
     ['a.com', 'b.com'],
+    ['api.example.com', 'www.example.com'],
     ['*.staging.example.com/api/*', '*.preview.example.com/api/*'],
     ['example.com', 'example.org'],
     ['localhost:3000', 'localhost:3001'],
@@ -178,5 +204,28 @@ describe('canOverlap', () => {
   ])('%s never meets %s', (a, b) => {
     expect(canOverlap(a, b)).toBe(false);
     expect(canOverlap(b, a)).toBe(false);
+  });
+});
+
+describe('takesEveryUrl', () => {
+  const group = (patterns: string[], extra: Partial<Group> = {}): Group => ({
+    id: '',
+    name: '',
+    enabled: true,
+    patterns,
+    headers: [],
+    ...extra,
+  });
+
+  it('is true of a group that changes headers and names no pattern, blank rows aside', () => {
+    expect(takesEveryUrl(group([]))).toBe(true);
+    expect(takesEveryUrl(group(['', ' \t'], { target: 'patterns', action: 'headers' }))).toBe(true);
+  });
+
+  it('is false with any pattern, even an invalid one, and of a group that blocks or targets tabs', () => {
+    expect(takesEveryUrl(group(['example.com']))).toBe(false);
+    expect(takesEveryUrl(group(['', 'not valid']))).toBe(false);
+    expect(takesEveryUrl(group([], { action: 'block' }))).toBe(false);
+    expect(takesEveryUrl(group([], { target: 'tabs' }))).toBe(false);
   });
 });

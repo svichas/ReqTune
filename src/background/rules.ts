@@ -1,4 +1,4 @@
-import { canOverlap, isRegexPattern, patternToRegex } from '../shared/pattern';
+import { canOverlap, isRegexPattern, patternToRegex, takesEveryUrl } from '../shared/pattern';
 import type { Group, HeaderEntry, TabSelections } from '../shared/types';
 import { isValidRequestHeader, isValidResponseHeader } from '../shared/validation';
 
@@ -133,6 +133,8 @@ export function buildRules(
       if (tabIds.length) rules.push(rule({ tabIds }));
       return;
     }
+    // No pattern at all: one rule with no URL filter, so every request from any tab.
+    if (takesEveryUrl(group)) rules.push(rule({}));
     for (const regexFilter of ruleRegexes(group, refused).regexes) rules.push(rule({ regexFilter }));
   });
   return rules;

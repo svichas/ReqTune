@@ -4,9 +4,8 @@ import { IconAppWindow, IconArrowBarToUp, IconCloudCheck, IconHelp, IconKeyboard
 import classes from './HelpPopover.module.css';
 
 const SYNTAX = [
-  ['*.example.com/api/*', '* is a wildcard'],
-  ['*.example.com', 'and example.com'],
-  ['example.com', 'every path'],
+  ['example.com', 'and its subdomains'],
+  ['example.com/api/*', '* is a wildcard'],
   ['/api/*', 'on any host'],
   ['localhost:3000', 'that port only'],
 ];
@@ -37,6 +36,9 @@ export function HelpPopover() {
           ))}
         </dl>
         <Text size="xs" c="dimmed" mt="sm">
+          With no pattern, a group changes every request. A group that blocks needs one.
+        </Text>
+        <Text size="xs" c="dimmed" mt="xs">
           Add <Code>?</Code> to match the query string too; otherwise it is ignored.
         </Text>
         <Text size="xs" c="dimmed" mt="xs">

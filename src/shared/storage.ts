@@ -9,6 +9,8 @@ export interface StoredState {
   syncError?: string;
   /** Every group off at once, each keeping its own switch for when ReqTune resumes; absent means running. */
   paused?: boolean;
+  /** Set once the worker has switched off the groups 0.2.0 left without a pattern, which only now take requests. */
+  patternsOptional?: boolean;
 }
 
 /**
@@ -88,6 +90,13 @@ export async function getPaused(): Promise<boolean> {
 }
 
 export const setPaused = (paused: boolean) => chrome.storage.local.set({ paused });
+
+export async function getPatternsOptional(): Promise<boolean> {
+  const { patternsOptional } = await chrome.storage.local.get('patternsOptional');
+  return patternsOptional === true;
+}
+
+export const setPatternsOptional = () => chrome.storage.local.set({ patternsOptional: true });
 
 /** Calls `onChange` whenever `key` changes in the `area` storage area; returns the unsubscribe function. */
 export function watchKey<A extends keyof StorageAreas, K extends keyof StorageAreas[A] & string>(

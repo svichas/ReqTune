@@ -326,6 +326,8 @@
         <h2 id="patterns-title">Patterns that read like URLs</h2>
         <p class="sub"><code>[scheme://]host[:port][/path]</code>, where <code>*</code> matches any characters.</p>
         <ul class="notes">
+          <li>No pattern at all means every request, for a group that changes headers.</li>
+          <li>A host covers its subdomains: <code>example.com</code> also matches <code>app.example.com</code>.</li>
           <li>In the host, <code>*</code> never crosses a <code>/</code>, so <code>example.com</code> can't match <code>example.com.evil.com</code>.</li>
           <li>No path means the whole site. A path must match in full; the query string is ignored unless the pattern contains <code>?</code>.</li>
           <li>Leave out default ports (<code>:80</code>, <code>:443</code>). Chrome removes them from URLs, so they never match.</li>
@@ -336,9 +338,9 @@
         <table>
           <thead><tr><th scope="col">Pattern</th><th scope="col">Matches</th></tr></thead>
           <tbody>
-            <tr><td><code>example.com</code></td><td>Every URL on example.com, on any scheme, port and path</td></tr>
-            <tr><td><code>*.example.com</code></td><td>example.com and all of its subdomains</td></tr>
-            <tr><td><code>api.example.com/v1/*</code></td><td>Everything under <code>/v1/</code> on that host</td></tr>
+            <tr><td><code>example.com</code></td><td>Every URL on example.com and its subdomains, on any scheme, port and path</td></tr>
+            <tr><td><code>*.example.com</code></td><td>The same: a host always covers its subdomains</td></tr>
+            <tr><td><code>api.example.com/v1/*</code></td><td>Everything under <code>/v1/</code> on that host and its subdomains</td></tr>
             <tr><td><code>localhost:3000</code></td><td>Only port 3000</td></tr>
             <tr><td><code>https://example.com/*</code></td><td>HTTPS requests only</td></tr>
             <tr><td><code>/graphql</code></td><td>That path on any host</td></tr>

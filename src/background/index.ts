@@ -1,5 +1,15 @@
-import { chromeTakes } from '../shared/pattern';
-import { getGroups, getPaused, getTabSelections, setPaused, setSyncError, watchKey } from '../shared/storage';
+import { chromeTakes, takesEveryUrl } from '../shared/pattern';
+import {
+  getGroups,
+  getPatternsOptional,
+  getPaused,
+  getTabSelections,
+  saveGroups,
+  setPatternsOptional,
+  setPaused,
+  setSyncError,
+  watchKey,
+} from '../shared/storage';
 import { supportedRules, withinRegexLimit } from './rules';
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
@@ -48,8 +58,20 @@ async function applyRules(): Promise<void> {
   }
 }
 
-// Syncs run one at a time: interleaved get/update pairs would add duplicate rule ids.
-let queue = Promise.resolve();
+/**
+ * Up to 0.2.0 a group with no URL pattern did nothing; now, unless it blocks, it takes every request. Those are
+ * switched off once, so an update alone never starts sending their headers, often a token, to every site.
+ */
+async function parkPatternlessGroups(): Promise<void> {
+  if (await getPatternsOptional()) return;
+  const groups = await getGroups();
+  await saveGroups(groups.map((group) => (takesEveryUrl(group) ? { ...group, enabled: false } : group)));
+  await setPatternsOptional();
+}
+
+// Syncs run one at a time: interleaved get/update pairs would add duplicate rule ids. The first waits for the
+// switch-off above.
+let queue = parkPatternlessGroups().catch(console.error);
 function sync(): void {
   queue = queue.then(applyRules).catch(console.error);
 }
