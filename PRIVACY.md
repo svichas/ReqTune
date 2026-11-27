@@ -1,6 +1,6 @@
 # ReqTune privacy policy
 
-Effective 3 November 2026. Applies to ReqTune 0.1.5 and later.
+Effective 27 November 2026. Applies to ReqTune 0.1.5 and later.
 
 ReqTune collects no data. It makes no network requests, has no server, and includes no analytics, advertising or tracking. Nothing you enter ever leaves your device.
 
@@ -25,7 +25,7 @@ ReqTune doesn't sell, share or transfer your data to anyone, because it never ha
 
 | Permission | Why |
 | --- | --- |
-| Access to all sites | Applies your headers on whichever sites your patterns name. You can limit it in the extension's Chrome settings. |
+| Access to all sites | Applies your headers on whichever sites your groups target. You can limit it in the extension's Chrome settings. |
 | `declarativeNetRequestWithHostAccess` | Applies the header rules |
 | `storage` | Saves your groups |
 | `sidePanel` | Shows the interface in Chrome's side panel |
@@ -33,7 +33,7 @@ ReqTune doesn't sell, share or transfer your data to anyone, because it never ha
 
 ## Headers you send
 
-Headers you set are sent by Chrome to the sites your patterns match, as part of your normal browsing. Those sites receive them, so don't set a header with a secret on a pattern broader than you intend.
+Headers you set are sent by Chrome to the sites your patterns match, as part of your normal browsing. A pattern's host covers its subdomains, and a group with no pattern sends its headers to every site. Those sites receive them, so don't set a header with a secret on a group broader than you intend.
 
 ## Changes and contact
 
