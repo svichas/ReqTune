@@ -13,7 +13,10 @@ interface Props {
   tabIds: number[];
   /** Focus the first pattern on mount (a brand-new group). */
   autoFocus: boolean;
-  /** The group is on, and its target has nothing usable yet: no valid pattern, or no picked tab still open. */
+  /**
+   * The group is on, and its target has nothing usable yet: no picked tab still open, or no valid pattern, which only
+   * a group that changes headers may go without.
+   */
   required: boolean;
   onChange: (group: Group) => void;
   onTabIdsChange: (tabIds: number[]) => void;

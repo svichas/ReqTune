@@ -1,3 +1,5 @@
+import type { Group } from './types';
+
 // A host wildcard never crosses into the userinfo, path, query or fragment.
 const HOST_STAR = '[^/?#@]*';
 
@@ -32,7 +34,8 @@ function wildcardParts(input: string) {
   // Only a path-only pattern may omit the host.
   if (!match || (!match[2] && pattern[0] !== '/')) return null;
   const [, scheme = '*', host, port = '*', path] = match;
-  return { scheme, host, port, path };
+  // A host covers its subdomains, so a leading `*.` only spells that out; a path-only pattern takes any host.
+  return { scheme, host: host.replace(/^\*\.(?=.)/, '') || '*', port, path };
 }
 
 /** Whether two globs, where `*` is any run of characters, can match one string; letters in any case. */
@@ -61,10 +64,10 @@ function globsMeet(a: string, b: string): boolean {
 export function canOverlap(a: string, b: string): boolean {
   const [p, q] = [wildcardParts(a), wildcardParts(b)];
   if (!p || !q) return true;
-  // `*.example.com` also matches example.com itself; a path-only pattern takes any host. With the port open, a host
-  // ending in `*` and digits can end anywhere, as its `*` can take `1:808` of web1:8082.
+  // A host also matches its subdomains, unless a leading `*` takes them already. With the port open, a host ending in
+  // `*` and digits can end anywhere, as its `*` can take `1:808` of web1:8082.
   const hosts = ({ host, port }: { host: string; port: string }) =>
-    (host.startsWith('*.') ? [host, host.slice(2)] : [host || '*']).flatMap((h) =>
+    (host[0] === '*' ? [host] : [`*.${host}`, host]).flatMap((h) =>
       port === '*' ? [h, h.replace(/\*[\d*]*$/, '*')] : [h],
     );
   // Whatever follows the path can be anything, and a path `*` can run on into the query: `/a*b` matches `/a?x=b`.
@@ -96,7 +99,7 @@ export async function chromeTakes(regex: string): Promise<boolean> {
  *
  * Syntax: `[scheme://]host[:port][/path]`, anchored at the start of the URL
  * - `*` is a wildcard: inside the host it never crosses `/`; inside the path it matches anything.
- * - A leading `*.` also matches the bare domain: `*.example.com` covers example.com and every subdomain.
+ * - A host covers its subdomains too: `example.com` matches app.example.com. `*.example.com` is the same pattern.
  * - Scheme is optional and must be http, https, ws, wss or `*`; omitted or `*://` means any of them.
  * - Port is optional: omitted or `:*` means any port.
  * - Path is optional: omitted means every path. A given path must match in full; the query string
@@ -116,12 +119,17 @@ export function patternToRegex(input: string): string | null {
   const { scheme, host, port, path } = parts;
 
   const schemeRe = scheme === '*' ? '(https?|wss?)' : scheme;
-  const hostRe = host.startsWith('*.')
-    ? `(${HOST_STAR}\\.)?${toRegex(host.slice(2), HOST_STAR)}`
-    : toRegex(host || '*', HOST_STAR);
+  const hostRe = (host[0] === '*' ? '' : `(${HOST_STAR}\\.)?`) + toRegex(host, HOST_STAR);
   const portRe = port === '*' ? '(:\\d+)?' : `:${port}`;
   // Whatever follows must start a new URL part, so `example.com` can't match `example.com.evil.com`
   // nor `/api` match `/apix`; a pattern with `?` must match the query in full too.
   const restRe = path ? toRegex(path, '.*') + (path.includes('?') ? '(#|$)' : '([?#]|$)') : '([/?#]|$)';
   return `^${schemeRe}://${hostRe}${portRe}${restRe}`;
 }
+
+/**
+ * Whether a group takes every request: it changes headers by URL, yet names no pattern (blank rows aside). An invalid
+ * pattern never widens a group to that. Nor may a block go without one: a click on Block would cut off every site.
+ */
+export const takesEveryUrl = ({ target, action, patterns }: Group) =>
+  target !== 'tabs' && action !== 'block' && patterns.every((pattern) => !pattern.trim());

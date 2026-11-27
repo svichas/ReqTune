@@ -72,8 +72,9 @@ export function UrlTester({ groups, tabs, tabSelections, defaultUrl = '', paused
         <ul aria-label="Matching groups" className={classes.list}>
           {result.byPattern.map(({ pattern, ...match }) => (
             <Match key={match.group.id} {...match}>
-              <Text span size="xs" ff="monospace" c="dimmed">
-                {pattern}
+              {/* A group with no pattern takes every URL; that's a label, so not in the patterns' monospace. */}
+              <Text span size="xs" ff={pattern ? 'monospace' : undefined} c="dimmed">
+                {pattern || 'All URLs'}
               </Text>
             </Match>
           ))}

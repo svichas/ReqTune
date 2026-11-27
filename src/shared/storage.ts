@@ -11,6 +11,8 @@ export interface StoredState {
   paused?: boolean;
   /** The name's share of a header row's name and value, in percent; absent until the line between them is dragged. */
   nameShare?: number;
+  /** Set once the worker has switched off the groups 0.2.0 left without a pattern, which only now take requests. */
+  patternsOptional?: boolean;
 }
 
 /**
@@ -97,6 +99,13 @@ export async function getNameShare(): Promise<number | undefined> {
 }
 
 export const setNameShare = (nameShare: number) => chrome.storage.local.set({ nameShare });
+
+export async function getPatternsOptional(): Promise<boolean> {
+  const { patternsOptional } = await chrome.storage.local.get('patternsOptional');
+  return patternsOptional === true;
+}
+
+export const setPatternsOptional = () => chrome.storage.local.set({ patternsOptional: true });
 
 /** Calls `onChange` whenever `key` changes in the `area` storage area; returns the unsubscribe function. */
 export function watchKey<A extends keyof StorageAreas, K extends keyof StorageAreas[A] & string>(
